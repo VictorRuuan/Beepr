@@ -1,0 +1,113 @@
+import { useEffect, useRef } from 'react';
+import {
+  View, Text, StyleSheet, Animated, Easing,
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useRouter } from 'expo-router';
+
+const PINK = '#c4185c';
+const BG = '#130008';
+
+export default function SetupAnalyzing() {
+  const router = useRouter();
+  const spin = useRef(new Animated.Value(0)).current;
+  const toastAnim = useRef(new Animated.Value(40)).current;
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Spin the arc indefinitely
+    Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 900,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+
+    // After a short delay show the toast
+    const toastTimer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.timing(toastOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      ]).start();
+    }, 1200);
+
+    // Navigate to the main feed after analysis
+    const navTimer = setTimeout(() => {
+      // router.replace('/(tabs)'); // uncomment when tabs exist
+    }, 3500);
+
+    return () => {
+      clearTimeout(toastTimer);
+      clearTimeout(navTimer);
+    };
+  }, []);
+
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Spinning arc */}
+      <Animated.View style={[styles.spinner, { transform: [{ rotate }] }]} />
+
+      <Text style={styles.label}>Analyzing your area...</Text>
+
+      {/* Toast */}
+      <Animated.View
+        style={[
+          styles.toast,
+          { transform: [{ translateY: toastAnim }], opacity: toastOpacity },
+        ]}
+      >
+        <Text style={styles.toastText}>Address verification powered by </Text>
+        <Text style={[styles.toastText, styles.toastLink]}>OpenStreetMap</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spinner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: 'transparent',
+    borderTopColor: PINK,
+    borderRightColor: `${PINK}44`,
+    marginBottom: 20,
+  },
+  label: {
+    color: '#888',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 48,
+    left: 24,
+    right: 24,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  toastText: { color: '#aaa', fontSize: 12 },
+  toastLink: { color: PINK, textDecorationLine: 'underline' },
+});

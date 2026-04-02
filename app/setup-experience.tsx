@@ -72,7 +72,7 @@ export default function SetupExperience() {
           style={[styles.btn, !selected && styles.btnMuted]}
           disabled={!selected}
           activeOpacity={0.85}
-          onPress={() => { /* próxima tela */ }}
+          onPress={() => router.push('/setup-format')}
         >
           <Text style={styles.btnText}>Continue</Text>
         </TouchableOpacity>
