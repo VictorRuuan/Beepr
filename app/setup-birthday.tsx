@@ -46,6 +46,14 @@ export default function SetupBirthday() {
   const isAdult = age !== null && age >= 21;
   const isUnder = age !== null && age < 21;
   const canContinue = isAdult || (isUnder && hasCard);
+  const [loading, setLoading] = useState(false);
+
+  async function handleContinue() {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 1500));
+    setLoading(false);
+    router.push('/setup-experience');
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -123,12 +131,12 @@ export default function SetupBirthday() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btn, !canContinue && styles.btnMuted]}
-          disabled={!canContinue}
+          style={[styles.btn, (!canContinue || loading) && styles.btnMuted]}
+          disabled={!canContinue || loading}
           activeOpacity={0.85}
-          onPress={() => { /* próxima tela */ }}
+          onPress={handleContinue}
         >
-          <Text style={styles.btnText}>Continue</Text>
+          <Text style={styles.btnText}>{loading ? 'Verifying...' : 'Continue'}</Text>
         </TouchableOpacity>
       </View>
 
