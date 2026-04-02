@@ -34,9 +34,9 @@ export default function SetupAnalyzing() {
       ]).start();
     }, 1200);
 
-    // Navigate to the main feed after analysis
+    // Navigate to the next step after analysis
     const navTimer = setTimeout(() => {
-      // router.replace('/(tabs)'); // uncomment when tabs exist
+      router.replace('/setup-range');
     }, 3500);
 
     return () => {
