@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, SafeAreaView, Animated,
+  StyleSheet, SafeAreaView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -15,26 +15,13 @@ type Phase = 'idle' | 'verifying';
 export default function SetupLocation() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('idle');
-  const toastAnim = useRef(new Animated.Value(40)).current;
-  const toastOpacity = useRef(new Animated.Value(0)).current;
-
-  const showToast = () => {
-    toastAnim.setValue(40);
-    toastOpacity.setValue(0);
-    Animated.parallel([
-      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-      Animated.timing(toastOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
-    ]).start();
-  };
 
   const handleEnable = () => {
     if (phase === 'verifying') return;
     setPhase('verifying');
-    showToast();
-    // Simulate location + verification delay, then go to analyzing screen
     setTimeout(() => {
       router.push('/setup-analyzing');
-    }, 2500);
+    }, 2000);
   };
 
   return (
@@ -70,16 +57,6 @@ export default function SetupLocation() {
         </Text>
       </View>
 
-      {/* Toast */}
-      <Animated.View
-        style={[
-          styles.toast,
-          { transform: [{ translateY: toastAnim }], opacity: toastOpacity },
-        ]}
-      >
-        <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
-        <Text style={styles.toastText}>Location verified! Loading your personalized feed...</Text>
-      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -134,18 +111,4 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textAlign: 'center',
   },
-  toast: {
-    position: 'absolute',
-    bottom: 110,
-    left: 24,
-    right: 24,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  toastText: { color: '#fff', fontSize: 13, fontWeight: '500' },
 });

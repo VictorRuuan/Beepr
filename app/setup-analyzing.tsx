@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 const PINK = '#c4185c';
 const BG = '#130008';
@@ -65,8 +66,8 @@ export default function SetupAnalyzing() {
           { transform: [{ translateY: toastAnim }], opacity: toastOpacity },
         ]}
       >
-        <Text style={styles.toastText}>Address verification powered by </Text>
-        <Text style={[styles.toastText, styles.toastLink]}>OpenStreetMap</Text>
+        <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
+        <Text style={styles.toastText}>Location verified! Loading your personalized feed...</Text>
       </Animated.View>
     </View>
   );
@@ -105,9 +106,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 2,
+    gap: 10,
   },
-  toastText: { color: '#aaa', fontSize: 12 },
-  toastLink: { color: PINK, textDecorationLine: 'underline' },
+  toastText: { color: '#fff', fontSize: 13, fontWeight: '500' },
 });
