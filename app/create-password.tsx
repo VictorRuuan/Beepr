@@ -30,6 +30,7 @@ export default function CreatePassword() {
   const [showPw, setShowPw] = useState(false);
   const [showCf, setShowCf] = useState(false);
   const [focused, setFocused] = useState<'pw' | 'cf' | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const reqs = {
     length: password.length >= 8,
@@ -107,12 +108,17 @@ export default function CreatePassword() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btn, !allMet && styles.btnMuted]}
-          disabled={!allMet}
+          style={[styles.btn, (!allMet || loading) && styles.btnMuted]}
+          disabled={!allMet || loading}
           activeOpacity={0.85}
-          onPress={() => { /* próximo passo */ }}
+          onPress={async () => {
+            setLoading(true);
+            await new Promise(r => setTimeout(r, 1500));
+            setLoading(false);
+            router.push('/onboarding');
+          }}
         >
-          <Text style={styles.btnText}>Continue</Text>
+          <Text style={styles.btnText}>{loading ? 'Creating...' : 'Continue'}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

@@ -1,15 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Animated, Dimensions, SafeAreaView,
+  StyleSheet, Animated, SafeAreaView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-// 6 boxes, 24px padding each side, 8px gap between = 5 gaps
-const BOX_SIZE = Math.floor((SCREEN_WIDTH - 48 - 40) / 6);
 
 const PINK = '#c4185c';
 const BG = '#130008';
@@ -65,22 +61,15 @@ export default function Verify() {
     <SafeAreaView style={styles.safe}>
       <StatusBar style="light" />
 
-      {/* Toast — positioned relative to safe area, above content */}
-      <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
-        <Text style={styles.toastTitle}>Code Sent!</Text>
-        <Text style={styles.toastSub}>
-          We've sent a 6-digit code to {email || 'your email'}
-        </Text>
-      </Animated.View>
-
       <View style={styles.container}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
 
         <Text style={styles.title}>Verification</Text>
         <Text style={styles.subtitle}>
-          Enter the 6-digit verification code sent to your email
+          Enter the 6-digit code sent to{'\n'}
+          <Text style={{ color: '#ccc' }}>{email || 'your email'}</Text>
         </Text>
 
         <View style={styles.codeRow}>
@@ -88,7 +77,7 @@ export default function Verify() {
             <TextInput
               key={i}
               ref={r => { inputRefs.current[i] = r; }}
-              style={styles.codeBox}
+              style={[styles.codeBox, digit ? styles.codeBoxFilled : null]}
               value={digit}
               onChangeText={v => handleChange(v, i)}
               onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
@@ -110,59 +99,78 @@ export default function Verify() {
         </TouchableOpacity>
 
         <Text style={styles.resend}>
-          Didn't receive your code yet? Try again in{' '}
-          <Text style={styles.timer}>0:{seconds.toString().padStart(2, '0')}</Text>
+          Didn't receive your code?{' '}
+          <Text style={styles.timer}>
+            {seconds > 0 ? `Try again in 0:${seconds.toString().padStart(2, '0')}` : 'Resend'}
+          </Text>
         </Text>
       </View>
+
+      {/* Toast flutuante */}
+      <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
+        <Ionicons name="checkmark-circle" size={16} color={PINK} />
+        <Text style={styles.toastText}>Code sent to your email</Text>
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-  toast: {
-    backgroundColor: '#1e0d16',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3a1025',
-  },
-  toastTitle: { color: '#fff', fontWeight: '700', fontSize: 14, marginBottom: 2 },
-  toastSub: { color: '#aaa', fontSize: 13 },
+  safe: { flex: 1, backgroundColor: BG },
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingTop: 24,
   },
-  back: { marginBottom: 32 },
-  title: { color: '#fff', fontSize: 28, fontWeight: '700', marginBottom: 8 },
-  subtitle: { color: '#888', fontSize: 14, marginBottom: 32, lineHeight: 20 },
+  back: { marginBottom: 28 },
+  title: { color: '#fff', fontSize: 24, fontWeight: '700', marginBottom: 6 },
+  subtitle: { color: '#888', fontSize: 13, marginBottom: 28, lineHeight: 19 },
   codeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 32,
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 28,
   },
   codeBox: {
-    width: BOX_SIZE,
-    height: BOX_SIZE,
+    width: 44,
+    height: 54,
     backgroundColor: '#2a0f1a',
     borderRadius: 10,
     color: '#fff',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    textAlignVertical: 'center',
+    paddingVertical: 0,
+    includeFontPadding: false,
+  },
+  codeBoxFilled: {
+    borderColor: PINK,
   },
   btn: {
     backgroundColor: PINK,
     borderRadius: 50,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   btnMuted: { backgroundColor: '#7a1040' },
-  btnText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  resend: { color: '#888', fontSize: 13, textAlign: 'center' },
+  btnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  resend: { color: '#888', fontSize: 12, textAlign: 'center' },
   timer: { color: PINK },
+  toast: {
+    position: 'absolute',
+    bottom: 32,
+    left: 32,
+    right: 32,
+    backgroundColor: '#1e0d16',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toastText: { color: '#ccc', fontSize: 13 },
 });
