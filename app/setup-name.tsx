@@ -13,6 +13,14 @@ const BG = '#130008';
 export default function SetupName() {
   const router = useRouter();
   const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleContinue() {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 1500));
+    setLoading(false);
+    router.push('/setup-phone');
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -54,12 +62,12 @@ export default function SetupName() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btn, !name.trim() && styles.btnMuted]}
-          disabled={!name.trim()}
+          style={[styles.btn, (!name.trim() || loading) && styles.btnMuted]}
+          disabled={!name.trim() || loading}
           activeOpacity={0.85}
-          onPress={() => { /* próxima tela */ }}
+          onPress={handleContinue}
         >
-          <Text style={styles.btnText}>Continue</Text>
+          <Text style={styles.btnText}>{loading ? 'Saving...' : 'Continue'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
