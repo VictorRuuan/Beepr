@@ -14,6 +14,7 @@ export default function SetupBirthday() {
   const router = useRouter();
   const [month, setMonth] = useState('');
   const [year, setYear] = useState('');
+  const [hasCard, setHasCard] = useState(false);
   const toastAnim = useRef(new Animated.Value(40)).current;
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
@@ -31,7 +32,20 @@ export default function SetupBirthday() {
     });
   }, []);
 
-  const isValid = month.length === 2 && year.length === 4;
+  const isComplete = month.length === 2 && year.length === 4;
+
+  const age = isComplete ? (() => {
+    const now = new Date();
+    const birthYear = parseInt(year, 10);
+    const birthMonth = parseInt(month, 10);
+    let a = now.getFullYear() - birthYear;
+    if (now.getMonth() + 1 < birthMonth) a--;
+    return a;
+  })() : null;
+
+  const isAdult = age !== null && age >= 21;
+  const isUnder = age !== null && age < 21;
+  const canContinue = isAdult || (isUnder && hasCard);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -75,16 +89,42 @@ export default function SetupBirthday() {
         </View>
 
         <View style={styles.hintBox}>
-          <Text style={styles.hintText}>
-            Enter your birth month and year to verify your age.
-          </Text>
+          {!isComplete && (
+            <Text style={styles.hintText}>
+              Enter your birth month and year to verify your age.
+            </Text>
+          )}
+          {isComplete && (
+            <>
+              <Text style={styles.ageLabel}>Your age</Text>
+              <Text style={styles.ageValue}>{age} years old</Text>
+            </>
+          )}
         </View>
+
+        {isUnder && (
+          <View style={styles.warningBox}>
+            <Text style={styles.warningText}>
+              You must be 21+ to use this app. However, if you hold a valid medical cannabis card, you may continue.
+            </Text>
+            <TouchableOpacity
+              style={styles.checkRow}
+              onPress={() => setHasCard(v => !v)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, hasCard && styles.checkboxChecked]}>
+                {hasCard && <Ionicons name="checkmark" size={14} color="#fff" />}
+              </View>
+              <Text style={styles.checkLabel}>I hold a valid medical cannabis card</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btn, !isValid && styles.btnMuted]}
-          disabled={!isValid}
+          style={[styles.btn, !canContinue && styles.btnMuted]}
+          disabled={!canContinue}
           activeOpacity={0.85}
           onPress={() => { /* próxima tela */ }}
         >
@@ -127,7 +167,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e0d14',
     borderRadius: 12,
     padding: 14,
+    marginBottom: 12,
   },
+  hintText: { color: '#666', fontSize: 13, lineHeight: 19 },
+  ageLabel: { color: '#888', fontSize: 12, marginBottom: 4, textAlign: 'center' },
+  ageValue: { color: '#fff', fontSize: 22, fontWeight: '700', textAlign: 'center' },
+  warningBox: {
+    backgroundColor: '#1e0d14',
+    borderRadius: 12,
+    padding: 14,
+    gap: 12,
+  },
+  warningText: { color: '#aaa', fontSize: 13, lineHeight: 19 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#888',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: { backgroundColor: PINK, borderColor: PINK },
+  checkLabel: { color: '#ccc', fontSize: 13, flex: 1 },
   hintText: { color: '#666', fontSize: 13, lineHeight: 19 },
   footer: {
     paddingHorizontal: 24,
