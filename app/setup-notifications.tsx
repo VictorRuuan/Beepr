@@ -4,7 +4,7 @@ import {
   TouchableOpacity, Modal, Animated,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const PINK = '#c4185c';
@@ -44,12 +44,18 @@ export default function SetupNotifications() {
     showToast(`Notification radius set to ${radiusMiles} miles`, true);
   }, []);
 
+  const router = useRouter();
+
   const handlePermission = (allowed: boolean) => {
     setPhase('loading');
     if (allowed) {
-      setTimeout(() => showToast('Notifications enabled!', true), 800);
+      setTimeout(() => {
+        showToast('Notifications enabled!', true);
+        setTimeout(() => router.replace('/setup-complete'), 1200);
+      }, 800);
+    } else {
+      setTimeout(() => router.replace('/setup-complete'), 800);
     }
-    // TODO: router.replace('/(tabs)') when tabs exist
   };
 
   // ── Loading screen ──────────────────────────────────────────────
