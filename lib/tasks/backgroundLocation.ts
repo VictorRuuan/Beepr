@@ -1,10 +1,34 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { supabase } from '../supabase';
 
 export const BACKGROUND_LOCATION_TASK = 'beepr-background-location';
 
 export interface LocationTaskData {
   locations: Location.LocationObject[];
+}
+
+/**
+ * Updates the location cache in notification_preferences.
+ * This is the same table the Capacitor app uses — no schema changes needed.
+ * The TTL is set by the existing location_cache_ttl_hours column (default: 4h).
+ */
+async function updateLocationCache(lat: number, lon: number): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { error } = await supabase
+    .from('notification_preferences')
+    .update({
+      last_location_latitude: lat,
+      last_location_longitude: lon,
+      last_location_updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('[BackgroundLocation] Failed to update location cache:', error.message);
+  }
 }
 
 /**
@@ -22,14 +46,10 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, ({ data, error }) => {
     const latest = locations[locations.length - 1];
     if (!latest) return;
 
-    // TODO: send to Supabase / trigger geofence check
-    // e.g.: supabase.functions.invoke('verify-location', { body: { lat, lng } })
-    console.log('[BackgroundLocation] New position:', {
-      lat: latest.coords.latitude,
-      lng: latest.coords.longitude,
-      accuracy: latest.coords.accuracy,
-      timestamp: new Date(latest.timestamp).toISOString(),
-    });
+    const { latitude, longitude } = latest.coords;
+
+    // Persist to notification_preferences (same table as Capacitor app)
+    updateLocationCache(latitude, longitude);
   }
 });
 
