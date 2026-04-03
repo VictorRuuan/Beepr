@@ -8,41 +8,42 @@ import { useRouter } from 'expo-router';
 
 const PINK = '#c4185c';
 const BG = '#130008';
+const CARD = '#17131a';
 const OPTIONS = [
   {
     key: 'indica',
     label: 'Indica',
     tag: 'Relaxing',
     emoji: '🌙',
-    bg: '#1a0d30',
+    circleBg: '#1a0d30',
   },
   {
     key: 'sativa',
     label: 'Sativa',
     tag: 'Energizing',
     emoji: '☀️',
-    bg: '#2a1a00',
+    circleBg: '#2a1a00',
   },
   {
     key: 'indica-hybrid',
     label: 'Indica-Dominant Hybrid',
     tag: '',
     emoji: '🌙',
-    bg: '#1a1a20',
+    circleBg: '#1a1a20',
   },
   {
     key: 'sativa-hybrid',
     label: 'Sativa-Dominant Hybrid',
     tag: '',
     emoji: '☀️',
-    bg: '#1e1a10',
+    circleBg: '#1e1a10',
   },
   {
     key: 'balanced-hybrid',
     label: 'Balanced Hybrid',
     tag: 'Perfect Balance',
     emoji: '🌿',
-    bg: '#0d1a10',
+    circleBg: '#0d1a10',
     fullWidth: true,
   },
 ];
@@ -72,41 +73,55 @@ export default function SetupStrains() {
         <Text style={styles.subtitle}>Preferences</Text>
 
         <View style={styles.grid}>
-          {OPTIONS.filter(o => !o.fullWidth).map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[
-                styles.card,
-                { backgroundColor: opt.bg },
-                selected.includes(opt.key) && styles.cardSelected,
-              ]}
-              activeOpacity={0.75}
-              onPress={() => toggle(opt.key)}
-            >
-              <Text style={styles.emoji}>{opt.emoji}</Text>
-              <Text style={styles.cardLabel}>{opt.label}</Text>
-              {opt.tag ? <Text style={styles.cardTag}>{opt.tag}</Text> : null}
-            </TouchableOpacity>
-          ))}
+          {OPTIONS.filter(o => !o.fullWidth).map(opt => {
+            const isSelected = selected.includes(opt.key);
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: isSelected ? '#5c1030' : CARD,
+                    borderColor: isSelected ? PINK : 'transparent',
+                  },
+                ]}
+                activeOpacity={0.75}
+                onPress={() => toggle(opt.key)}
+              >
+                <View style={[styles.emojiCircle, { backgroundColor: opt.circleBg }]}>
+                  <Text style={styles.emoji}>{opt.emoji}</Text>
+                </View>
+                <Text style={styles.cardLabel}>{opt.label}</Text>
+                {opt.tag ? <Text style={styles.cardTag}>{opt.tag}</Text> : null}
+              </TouchableOpacity>
+            );
+          })}
 
           {/* Balanced Hybrid — full width */}
-          {OPTIONS.filter(o => o.fullWidth).map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[
-                styles.card,
-                styles.cardFull,
-                { backgroundColor: opt.bg },
-                selected.includes(opt.key) && styles.cardSelected,
-              ]}
-              activeOpacity={0.75}
-              onPress={() => toggle(opt.key)}
-            >
-              <Text style={styles.emoji}>{opt.emoji}</Text>
-              <Text style={styles.cardLabel}>{opt.label}</Text>
-              {opt.tag ? <Text style={styles.cardTag}>{opt.tag}</Text> : null}
-            </TouchableOpacity>
-          ))}
+          {OPTIONS.filter(o => o.fullWidth).map(opt => {
+            const isSelected = selected.includes(opt.key);
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.card,
+                  styles.cardFull,
+                  {
+                    backgroundColor: isSelected ? '#5c1030' : CARD,
+                    borderColor: isSelected ? PINK : 'transparent',
+                  },
+                ]}
+                activeOpacity={0.75}
+                onPress={() => toggle(opt.key)}
+              >
+                <View style={[styles.emojiCircle, { backgroundColor: opt.circleBg }]}>
+                  <Text style={styles.emoji}>{opt.emoji}</Text>
+                </View>
+                <Text style={styles.cardLabel}>{opt.label}</Text>
+                {opt.tag ? <Text style={styles.cardTag}>{opt.tag}</Text> : null}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -149,6 +164,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: CARD,
     borderWidth: 2,
     borderColor: 'transparent',
     gap: 6,
@@ -157,8 +173,16 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 28,
   },
-  cardSelected: { borderColor: PINK },
-  emoji: { fontSize: 34 },
+  cardSelected: { borderColor: PINK, backgroundColor: '#2a0520' },
+  emojiCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emoji: { fontSize: 28 },
   cardLabel: { color: '#fff', fontSize: 13, fontWeight: '700', textAlign: 'center' },
   cardTag: { color: '#888', fontSize: 11, textAlign: 'center' },
   footer: {

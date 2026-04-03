@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: '#1e0d14',
+    backgroundColor: '#17131a',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -183,14 +183,14 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   pill: {
-    backgroundColor: '#1e0d14',
+    backgroundColor: '#17131a',
     borderRadius: 50,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  pillSelected: { borderColor: PINK, backgroundColor: '#2a0520' },
+  pillSelected: { borderColor: PINK, backgroundColor: '#5c1030' },
   pillText: { color: '#ccc', fontSize: 13, fontWeight: '500' },
   pillTextSelected: { color: '#fff' },
   footer: {

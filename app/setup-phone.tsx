@@ -78,13 +78,15 @@ const styles = StyleSheet.create({
   subtitle: { color: '#888', fontSize: 13, lineHeight: 19, marginBottom: 32 },
   label: { color: '#ccc', fontSize: 13, fontWeight: '600', marginBottom: 10 },
   input: {
-    backgroundColor: '#2a0f1a',
+    backgroundColor: '#17131a',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     color: '#fff',
     fontSize: 16,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#2f1d2f',
   },
   hint: { color: '#666', fontSize: 12, lineHeight: 17 },
   footer: {

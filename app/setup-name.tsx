@@ -88,9 +88,11 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: '#2a1a22',
+    backgroundColor: '#17131a',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2f1d2f',
   },
   avatarQuestion: { color: '#888', fontSize: 36, fontWeight: '300' },
   cameraBtn: {
@@ -109,12 +111,14 @@ const styles = StyleSheet.create({
 
   label: { color: '#ccc', fontSize: 13, fontWeight: '600', marginBottom: 10 },
   input: {
-    backgroundColor: '#2a0f1a',
+    backgroundColor: '#17131a',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     color: '#fff',
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#2f1d2f',
   },
 
   footer: {

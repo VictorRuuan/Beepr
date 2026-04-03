@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const PINK = '#c4185c';
 const BG = '#130008';
-const CARD_BG = '#1e0d14';
+const CARD_BG = '#17131a';
 const MIN = 1;
 const MAX = 49.9;
 
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     bottom: 32,
     left: 24,
     right: 24,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#17131a',
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,

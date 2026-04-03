@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '47%',
-    backgroundColor: '#1e0d14',
+    backgroundColor: '#17131a',
     borderRadius: 14,
     paddingVertical: 28,
     alignItems: 'center',
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     gap: 10,
   },
-  cardSelected: { borderColor: PINK },
+  cardSelected: { borderColor: PINK, backgroundColor: '#5c1030' },
   emoji: { fontSize: 36 },
   cardLabel: { color: '#fff', fontSize: 15, fontWeight: '600' },
   footer: {

@@ -70,13 +70,15 @@ const styles = StyleSheet.create({
   title: { color: '#fff', fontSize: 28, fontWeight: '700', marginBottom: 8 },
   subtitle: { color: '#888', fontSize: 14, marginBottom: 32, lineHeight: 20 },
   input: {
-    backgroundColor: '#2a0f1a',
+    backgroundColor: '#17131a',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
     color: '#fff',
     fontSize: 16,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#2f1d2f',
   },
   btn: {
     backgroundColor: PINK,

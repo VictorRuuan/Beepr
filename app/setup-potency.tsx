@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   card: {
     width: '30%',
     aspectRatio: 1,
-    backgroundColor: '#1e0d14',
+    backgroundColor: '#17131a',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     gap: 8,
   },
-  cardSelected: { borderColor: PINK },
+  cardSelected: { borderColor: PINK, backgroundColor: '#5c1030' },
   emoji: { fontSize: 30 },
   cardLabel: { color: '#fff', fontSize: 13, fontWeight: '600', textAlign: 'center' },
   footer: {
