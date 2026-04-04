@@ -8,23 +8,37 @@ export interface LocationTaskData {
   locations: Location.LocationObject[];
 }
 
+async function getAuthenticatedUserId(): Promise<string | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session?.user?.id ?? null;
+}
+
 /**
  * Updates the location cache in notification_preferences.
  * This is the same table the Capacitor app uses — no schema changes needed.
  * The TTL is set by the existing location_cache_ttl_hours column (default: 4h).
  */
 async function updateLocationCache(lat: number, lon: number): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    console.warn('[BackgroundLocation] No authenticated session available for location sync.');
+    return;
+  }
 
   const { error } = await supabase
     .from('notification_preferences')
-    .update({
-      last_location_latitude: lat,
-      last_location_longitude: lon,
-      last_location_updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', user.id);
+    .upsert(
+      {
+        user_id: userId,
+        last_location_latitude: lat,
+        last_location_longitude: lon,
+        last_location_updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' },
+    );
 
   if (error) {
     console.error('[BackgroundLocation] Failed to update location cache:', error.message);
@@ -36,7 +50,7 @@ async function updateLocationCache(lat: number, lon: number): Promise<void> {
  * This must be called at the TOP LEVEL of the app (before any component mounts),
  * which is why it lives in its own file imported from index.js / _layout.tsx.
  */
-TaskManager.defineTask(BACKGROUND_LOCATION_TASK, ({ data, error }) => {
+TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
   if (error) {
     console.error('[BackgroundLocation] Task error:', error.message);
     return;
@@ -49,7 +63,7 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, ({ data, error }) => {
     const { latitude, longitude } = latest.coords;
 
     // Persist to notification_preferences (same table as Capacitor app)
-    updateLocationCache(latitude, longitude);
+    await updateLocationCache(latitude, longitude);
   }
 });
 

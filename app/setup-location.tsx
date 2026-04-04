@@ -48,9 +48,12 @@ export default function SetupLocation() {
       const { latitude, longitude } = position.coords;
 
       // 4. Persiste na tabela notification_preferences (mesmo schema do app Capacitor)
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from('notification_preferences')
           .upsert(
             {
@@ -61,6 +64,10 @@ export default function SetupLocation() {
             },
             { onConflict: 'user_id' },
           );
+
+        if (error) {
+          throw new Error(error.message);
+        }
       }
 
       router.push('/setup-analyzing');
