@@ -1,22 +1,15 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const getNearbyBusinesses = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('get-nearby-businesses', { body });
+export const getNearbyBusinesses = createEdgeFunction('get-nearby-businesses');
 
-export const productsNearby = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('products-nearby', { body });
+export const productsNearby = createEdgeFunction('products-nearby');
 
-export const productsNearbySimple = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('products-nearby-simple', { body });
+export const productsNearbySimple = createEdgeFunction('products-nearby-simple');
 
-export const geocodeSearch = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('geocode-search', { body });
+export const geocodeSearch = createEdgeFunction('geocode-search');
 
-export const getMapboxToken = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('get-mapbox-token', { body });
+export const getMapboxToken = createEdgeFunction('get-mapbox-token');
 
-export const verifyLocation = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('verify-location', { body });
+export const verifyLocation = createEdgeFunction('verify-location');
 
-export const getJurisdictionTax = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('get-jurisdiction-tax', { body });
+export const getJurisdictionTax = createEdgeFunction('get-jurisdiction-tax');

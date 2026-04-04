@@ -1,22 +1,15 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const authSignUp = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('auth-signup', { body });
+export const authSignUp = createEdgeFunction('auth-signup');
 
-export const authSignIn = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('auth-signin', { body });
+export const authSignIn = createEdgeFunction('auth-signin');
 
-export const authRefresh = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('auth-refresh', { body });
+export const authRefresh = createEdgeFunction('auth-refresh');
 
-export const authSocial = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('auth-social', { body });
+export const authSocial = createEdgeFunction('auth-social');
 
-export const verifyAge = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('verify-age', { body });
+export const verifyAge = createEdgeFunction('verify-age');
 
-export const deleteAccount = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('delete-account', { body });
+export const deleteAccount = createEdgeFunction('delete-account');
 
-export const deleteUserByEmail = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('delete-user-by-email', { body });
+export const deleteUserByEmail = createEdgeFunction('delete-user-by-email');

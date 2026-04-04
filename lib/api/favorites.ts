@@ -1,19 +1,13 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const getFavorites = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('get-favorites', { body });
+export const getFavorites = createEdgeFunction('get-favorites');
 
-export const checkFavoriteStatus = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('check-favorite-status', { body });
+export const checkFavoriteStatus = createEdgeFunction('check-favorite-status');
 
-export const toggleFavorite = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('toggle-favorite', { body });
+export const toggleFavorite = createEdgeFunction('toggle-favorite');
 
-export const updateFavoriteNotes = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('update-favorite-notes', { body });
+export const updateFavoriteNotes = createEdgeFunction('update-favorite-notes');
 
-export const checkBusinessFavoriteStatus = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('check-business-favorite-status', { body });
+export const checkBusinessFavoriteStatus = createEdgeFunction('check-business-favorite-status');
 
-export const toggleBusinessFavorite = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('toggle-business-favorite', { body });
+export const toggleBusinessFavorite = createEdgeFunction('toggle-business-favorite');

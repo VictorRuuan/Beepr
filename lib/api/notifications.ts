@@ -1,25 +1,17 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const sendPushNotification = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('send-push-notification', { body });
+export const sendPushNotification = createEdgeFunction('send-push-notification');
 
-export const notifyProductMatch = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('notify-product-match', { body });
+export const notifyProductMatch = createEdgeFunction('notify-product-match');
 
-export const notifyNewProduct = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('notify-new-product', { body });
+export const notifyNewProduct = createEdgeFunction('notify-new-product');
 
-export const notifyOrderUpdate = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('notify-order-update', { body });
+export const notifyOrderUpdate = createEdgeFunction('notify-order-update');
 
-export const notifyDealAlert = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('notify-deal-alert', { body });
+export const notifyDealAlert = createEdgeFunction('notify-deal-alert');
 
-export const processNotificationQueue = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('process-notification-queue', { body });
+export const processNotificationQueue = createEdgeFunction('process-notification-queue');
 
-export const processNewProductQueue = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('process-new-product-queue', { body });
+export const processNewProductQueue = createEdgeFunction('process-new-product-queue');
 
-export const processDealAlertQueue = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('process-deal-alert-queue', { body });
+export const processDealAlertQueue = createEdgeFunction('process-deal-alert-queue');

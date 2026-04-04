@@ -1,4 +1,3 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const migratePotency = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('migrate-potency', { body });
+export const migratePotency = createEdgeFunction('migrate-potency');

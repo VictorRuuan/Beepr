@@ -1,13 +1,9 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const processOrder = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('process-order', { body });
+export const processOrder = createEdgeFunction('process-order');
 
-export const manageCart = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('manage-cart', { body });
+export const manageCart = createEdgeFunction('manage-cart');
 
-export const sendOrderConfirmation = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('send-order-confirmation', { body });
+export const sendOrderConfirmation = createEdgeFunction('send-order-confirmation');
 
-export const sendOrderCompleted = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('send-order-completed', { body });
+export const sendOrderCompleted = createEdgeFunction('send-order-completed');

@@ -1,31 +1,21 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const searchProducts = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('search-products', { body });
+export const searchProducts = createEdgeFunction('search-products');
 
-export const getProductsByCategory = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('get-products-by-category', { body });
+export const getProductsByCategory = createEdgeFunction('get-products-by-category');
 
-export const getRecommendations = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('get-recommendations', { body });
+export const getRecommendations = createEdgeFunction('get-recommendations');
 
-export const processDailyRecommendations = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('process-daily-recommendations', { body });
+export const processDailyRecommendations = createEdgeFunction('process-daily-recommendations');
 
-export const scheduleDailyRecommendations = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('schedule-daily-recommendations', { body });
+export const scheduleDailyRecommendations = createEdgeFunction('schedule-daily-recommendations');
 
-export const getBrandCatalog = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('get-brand-catalog', { body });
+export const getBrandCatalog = createEdgeFunction('get-brand-catalog');
 
-export const getBrandAnalytics = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('get-brand-analytics', { body });
+export const getBrandAnalytics = createEdgeFunction('get-brand-analytics');
 
-export const listBrandProduct = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('list-brand-product', { body });
+export const listBrandProduct = createEdgeFunction('list-brand-product');
 
-export const unlistBrandProduct = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('unlist-brand-product', { body });
+export const unlistBrandProduct = createEdgeFunction('unlist-brand-product');
 
-export const trackInteraction = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('track-interaction', { body });
+export const trackInteraction = createEdgeFunction('track-interaction');

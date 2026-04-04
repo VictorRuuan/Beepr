@@ -1,16 +1,11 @@
-import { supabase } from '../supabase';
+import { createEdgeFunction } from './client';
 
-export const submitReview = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('submit-review', { body });
+export const submitReview = createEdgeFunction('submit-review');
 
-export const getProductReviews = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('get-product-reviews', { body });
+export const getProductReviews = createEdgeFunction('get-product-reviews');
 
-export const getMyReviews = async (body?: Record<string, unknown>) =>
-  supabase.functions.invoke('get-my-reviews', { body });
+export const getMyReviews = createEdgeFunction('get-my-reviews');
 
-export const deleteReview = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('delete-review', { body });
+export const deleteReview = createEdgeFunction('delete-review');
 
-export const markReviewHelpful = async (body: Record<string, unknown>) =>
-  supabase.functions.invoke('mark-review-helpful', { body });
+export const markReviewHelpful = createEdgeFunction('mark-review-helpful');
