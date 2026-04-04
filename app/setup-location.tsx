@@ -1,27 +1,74 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, SafeAreaView,
+  StyleSheet, SafeAreaView, Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { requestLocationPermissions, startBackgroundLocation } from '../lib/tasks/backgroundLocation';
+import { supabase } from '../lib/supabase';
 
 const PINK = '#c4185c';
 const BG = '#130008';
 
-type Phase = 'idle' | 'verifying';
+type Phase = 'idle' | 'verifying' | 'denied';
 
 export default function SetupLocation() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('idle');
 
-  const handleEnable = () => {
+  const handleEnable = async () => {
     if (phase === 'verifying') return;
     setPhase('verifying');
-    setTimeout(() => {
+
+    try {
+      // 1. Solicita permissão foreground + background ao OS (iOS/Android)
+      const granted = await requestLocationPermissions();
+
+      if (!granted) {
+        setPhase('denied');
+        Alert.alert(
+          'Location Required',
+          'Beepr needs background location to find dispensaries near you. Please enable it in Settings.',
+          [{ text: 'OK', onPress: () => setPhase('idle') }],
+        );
+        return;
+      }
+
+      // 2. Inicia o rastreamento persistente em background
+      await startBackgroundLocation();
+
+      // 3. Captura posição atual para o primeiro cache no Supabase
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // 4. Persiste na tabela notification_preferences (mesmo schema do app Capacitor)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('notification_preferences')
+          .upsert(
+            {
+              user_id: user.id,
+              last_location_latitude: latitude,
+              last_location_longitude: longitude,
+              last_location_updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id' },
+          );
+      }
+
       router.push('/setup-analyzing');
-    }, 2000);
+    } catch (err) {
+      console.error('[SetupLocation] Error:', err);
+      setPhase('idle');
+      Alert.alert('Error', 'Could not retrieve your location. Please try again.');
+    }
   };
 
   return (
@@ -42,10 +89,10 @@ export default function SetupLocation() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.btn, phase === 'verifying' && styles.btnVerifying]}
+          style={[styles.btn, phase !== 'idle' && styles.btnBusy]}
           activeOpacity={0.85}
           onPress={handleEnable}
-          disabled={phase === 'verifying'}
+          disabled={phase !== 'idle'}
         >
           <Text style={styles.btnText}>
             {phase === 'verifying' ? 'Verifying Location...' : 'Enable Location'}
@@ -104,7 +151,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  btnVerifying: { backgroundColor: '#7a1040' },
+  btnBusy: { backgroundColor: '#7a1040' },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
   legal: {
     color: '#555',

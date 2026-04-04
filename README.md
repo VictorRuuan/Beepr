@@ -8,75 +8,50 @@ Este app é a versão nativa do Beepr e integra com o mesmo backend Supabase já
 
 O projeto existe para entregar uma experiência mobile moderna, com fluxo completo de autenticação e onboarding, conectada a recomendações e conteúdo local baseado em localização do usuário.
 
-## O que já foi feito
+## Status de Entrega
 
-### 1) Base do app e infraestrutura
-- Estrutura principal do app com Expo + Expo Router.
-- Configuração de NativeWind/Tailwind para estilização.
-- Integração com Supabase (`@supabase/supabase-js`).
-- Suporte a AsyncStorage para persistência de sessão.
-- Setup nativo Android (`android/`) com prebuild do Expo já executado.
+### ✅ WEEK 1 — Foundation & Native Infra (CONCLUÍDA)
 
-### 2) Fluxo de autenticação
-- Telas e navegação para:
-  - Login
-  - Registro
-  - Verificação
-- Camada de API para autenticação via Edge Functions:
-  - `auth-signup`
-  - `auth-signin`
-  - `auth-refresh`
-  - `auth-social`
+#### 1) Ambiente nativo (Expo Bare Workflow)
+- Build nativo Android gerado via `npx expo prebuild`.
+- `android/` com `AndroidManifest.xml`, `build.gradle` e Hermes configurados.
+- `app.json` com `newArchEnabled: true`, plugins nativos de location e notifications.
+- Permissões declaradas: `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE_LOCATION`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`.
+- iOS: `UIBackgroundModes: ["location", "fetch", "remote-notification"]` e strings de permissão configuradas.
+- Custom URL scheme `beepr://` + `router.origin` configurado para deep links universais.
 
-### 3) Onboarding completo
-- Sequência de telas de setup implementadas:
-  - nome
-  - telefone
-  - data de nascimento
-  - experiência
-  - potência
-  - formatos
-  - strains
-  - flavors
-  - efeitos
-  - localização
-  - notificações
-  - faixa/range
-  - telas de loading/análise
-- Fluxo de preferências preparado para persistência via backend.
+#### 2) Geolocalização persistente em background
+- `lib/tasks/backgroundLocation.ts` — task registrada no top-level via `TaskManager.defineTask`.
+- Atualização a cada 60s ou 50m (equilíbrio bateria/precisão).
+- Android: `foregroundService` com notificação persistente obrigatória pelo OS.
+- iOS: `showsBackgroundLocationIndicator` (pílula azul da barra de status).
+- Cache de localização persistido direto na tabela `notification_preferences` (compatível com o app Capacitor legado, sem mudança de schema).
+- `setup-location.tsx` conectado ao SDK real: solicita permissão nativa, inicia background task e salva primeira posição no Supabase antes de prosseguir no onboarding.
 
-### 4) Geolocalização e tarefas
-- Dependências instaladas e integradas para:
-  - `expo-location`
-  - `expo-task-manager`
-  - `expo-notifications`
-  - `expo-device`
-  - `expo-application`
-- Base para coleta de localização e execução de tarefas em background.
+#### 3) Push Notifications via FCM/APNs com deep-linking
+- `lib/push-notifications.ts` — registro de token, canais Android (`default`, `deals`, `orders`), handler de foreground.
+- Token Expo persistido em `user_push_tokens` via upsert (`user_id, token` como constraint única).
+- Deep-link funcional: `handleNotificationResponse` roteia para qualquer tela via `router.push(data.screen)`.
+- `AndroidManifest.xml` com meta-data FCM e intent filter para `beepr://`.
+- `_layout.tsx` orquestra registro de token, listeners de notificação e importação top-level da background task.
 
-### 5) APIs de domínio organizadas em módulos
-Camada de API em `lib/api/` separada por contexto de negócio:
-- `auth.ts`
-- `profile.ts`
-- `products.ts`
-- `businesses.ts`
-- `favorites.ts`
-- `orders.ts`
-- `reviews.ts`
-- `notifications.ts`
-- `utils.ts`
+#### 4) PostGIS — Substituição do Haversine (adiantado da Week 4)
+- Migration `20260403000000_add_nearby_businesses_rpc.sql` **aplicada em produção** via SQL Editor.
+- Coluna `location geography(Point, 4326)` adicionada em `business_applications`.
+- Trigger `trg_sync_business_location` mantém a coluna sincronizada automaticamente.
+- Índice GIST espacial para queries de proximidade em O(log n).
+- RPC `nearby_businesses(p_lat, p_lon, p_limit)` disponível para o app — usa `ST_DWithin` no índice, sem full-table scan.
+- App Capacitor (produção iOS) **não é afetado** — as alterações são 100% aditivas.
 
-### 6) Backend Supabase conectado
-- Estrutura de Edge Functions extensa em `supabase/functions/` cobrindo:
-  - autenticação
-  - perfil/preferências
-  - busca/recomendação de produtos
-  - negócios próximos e geocoding
-  - favoritos
-  - pedidos
-  - avaliações
-  - notificações e filas assíncronas
-- Conjunto de migrations em `supabase/migrations/` para evolução de schema, RLS e features de negócio.
+#### 5) Camada de API centralizada
+- `lib/api/client.ts` — `createEdgeFunction`, `ApiClientError`, `ApiResponse<T>` tipado.
+- Todos os 9 módulos (`auth`, `profile`, `products`, `businesses`, `favorites`, `orders`, `reviews`, `notifications`, `utils`) migrados para o padrão `createEdgeFunction`.
+- `lib/supabase.ts` — `getRequiredEnv` garante fail-fast com mensagem clara se variáveis de ambiente estiverem ausentes.
+
+#### 6) Fluxo de autenticação e onboarding completo
+- Telas: Login, Registro, Verificação.
+- Onboarding: nome, telefone, data de nascimento, experiência, potência, formatos, strains, flavors, efeitos, localização (SDK real), notificações, range, loading/análise, setup-complete.
+- `app/admin/_layout.tsx` — estrutura da seção admin criada.
 
 ## Stack atual
 
@@ -134,10 +109,6 @@ npm run android
 
 ## Estado atual
 
-Projeto em fase ativa de evolução, com:
-- fundação técnica concluída
-- autenticação e onboarding implementados
-- integrações principais com Supabase prontas
-- base de localização/notificações já estabelecida
-
-Próximas etapas típicas incluem acabamento de UX, validações finais de fluxo, testes e publicação das versões mobile.
+Week 1 do roadmap 100% concluída e deployada em produção.
+Próximo milestone: **Week 2–3 — Native UI & Matching Optimization**.
+Veja `PROXIMOS-PASSOS.md` para instruções detalhadas.
