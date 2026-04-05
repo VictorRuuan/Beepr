@@ -17,14 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.beepr.app.new",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "location",
-          "fetch",
-          "remote-notification",
-          "location",
-          "fetch",
-          "remote-notification"
-        ],
+        "UIBackgroundModes": ["location", "fetch", "remote-notification"],
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Beepr needs your location to find cannabis dispensaries near you and send proximity alerts.",
         "NSLocationAlwaysUsageDescription": "Beepr uses your location in the background to detect when you're near a dispensary.",
         "NSLocationWhenInUseUsageDescription": "Beepr needs your location to find dispensaries near you.",
