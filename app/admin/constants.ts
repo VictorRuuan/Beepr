@@ -1,0 +1,18 @@
+export const ADMIN_COLORS = {
+  bg: '#19010d',
+  topBar: '#18191f',
+  sidebar: '#21242b',
+  sidebarBorder: '#2f343d',
+  surface: '#1b1e25',
+  surfaceMuted: '#171a20',
+  border: '#2b313c',
+  text: '#f6f7fb',
+  textMuted: '#95a0b7',
+  textDim: '#6e7689',
+  accent: '#cf2f78',
+  accentSoft: '#2a0317',
+  accentBorder: '#54203a',
+  success: '#2ec866',
+  badge: '#242a34',
+  searchBg: '#2a0718',
+} as const;

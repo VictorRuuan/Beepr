@@ -39,8 +39,8 @@ async function savePushToken(token: string) {
 }
 
 export default function RootLayout() {
-  const notificationListener = useRef<Notifications.EventSubscription>();
-  const responseListener = useRef<Notifications.EventSubscription>();
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
+  const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
     // Register device and persist Expo push token to user_push_tokens table

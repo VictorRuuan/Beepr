@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, SafeAreaView, Animated,
+  KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -56,106 +57,122 @@ export default function SetupBirthday() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="light" />
+    <KeyboardAvoidingView
+      style={styles.keyboard}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <SafeAreaView style={styles.safe}>
+        <StatusBar style="light" />
 
-      <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-        <Ionicons name="arrow-back" size={22} color="#fff" />
-      </TouchableOpacity>
-
-      <View style={styles.container}>
-        <Text style={styles.title}>My Birthday...</Text>
-        <Text style={styles.subtitle}>
-          You must be 21+ or hold a medical card to continue
-        </Text>
-
-        <View style={styles.row}>
-          <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Month (MM)</Text>
-            <TextInput
-              style={styles.input}
-              value={month}
-              onChangeText={v => setMonth(v.replace(/\D/g, '').slice(0, 2))}
-              placeholder="MM"
-              placeholderTextColor="#555"
-              keyboardType="number-pad"
-              maxLength={2}
-            />
-          </View>
-          <View style={styles.fieldWrap}>
-            <Text style={styles.label}>Year (YYYY)</Text>
-            <TextInput
-              style={styles.input}
-              value={year}
-              onChangeText={v => setYear(v.replace(/\D/g, '').slice(0, 4))}
-              placeholder="YYYY"
-              placeholderTextColor="#555"
-              keyboardType="number-pad"
-              maxLength={4}
-            />
-          </View>
-        </View>
-
-        <View style={styles.hintBox}>
-          {!isComplete && (
-            <Text style={styles.hintText}>
-              Enter your birth month and year to verify your age.
-            </Text>
-          )}
-          {isComplete && (
-            <>
-              <Text style={styles.ageLabel}>Your age</Text>
-              <Text style={styles.ageValue}>{age} years old</Text>
-            </>
-          )}
-        </View>
-
-        {isUnder && (
-          <View style={styles.warningBox}>
-            <Text style={styles.warningText}>
-              You must be 21+ to use this app. However, if you hold a valid medical cannabis card, you may continue.
-            </Text>
-            <TouchableOpacity
-              style={styles.checkRow}
-              onPress={() => setHasCard(v => !v)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.checkbox, hasCard && styles.checkboxChecked]}>
-                {hasCard && <Ionicons name="checkmark" size={14} color="#fff" />}
-              </View>
-              <Text style={styles.checkLabel}>I hold a valid medical cannabis card</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.btn, (!canContinue || loading) && styles.btnMuted]}
-          disabled={!canContinue || loading}
-          activeOpacity={0.85}
-          onPress={handleContinue}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.btnText}>{loading ? 'Verifying...' : 'Continue'}</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+            <Ionicons name="arrow-back" size={22} color="#fff" />
+          </TouchableOpacity>
 
-      {/* Toast */}
-      <Animated.View
-        style={[
-          styles.toast,
-          { transform: [{ translateY: toastAnim }], opacity: toastOpacity },
-        ]}
-      >
-        <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
-        <Text style={styles.toastText}>Phone number saved!</Text>
-      </Animated.View>
-    </SafeAreaView>
+          <View style={styles.container}>
+            <Text style={styles.title}>My Birthday...</Text>
+            <Text style={styles.subtitle}>
+              You must be 21+ or hold a medical card to continue
+            </Text>
+
+            <View style={styles.row}>
+              <View style={styles.fieldWrap}>
+                <Text style={styles.label}>Month (MM)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={month}
+                  onChangeText={v => setMonth(v.replace(/\D/g, '').slice(0, 2))}
+                  placeholder="MM"
+                  placeholderTextColor="#555"
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  returnKeyType="next"
+                />
+              </View>
+              <View style={styles.fieldWrap}>
+                <Text style={styles.label}>Year (YYYY)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={year}
+                  onChangeText={v => setYear(v.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="YYYY"
+                  placeholderTextColor="#555"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  returnKeyType="done"
+                />
+              </View>
+            </View>
+
+            <View style={styles.hintBox}>
+              {!isComplete && (
+                <Text style={styles.hintText}>
+                  Enter your birth month and year to verify your age.
+                </Text>
+              )}
+              {isComplete && (
+                <>
+                  <Text style={styles.ageLabel}>Your age</Text>
+                  <Text style={styles.ageValue}>{age} years old</Text>
+                </>
+              )}
+            </View>
+
+            {isUnder && (
+              <View style={styles.warningBox}>
+                <Text style={styles.warningText}>
+                  You must be 21+ to use this app. However, if you hold a valid medical cannabis card, you may continue.
+                </Text>
+                <TouchableOpacity
+                  style={styles.checkRow}
+                  onPress={() => setHasCard(v => !v)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.checkbox, hasCard && styles.checkboxChecked]}>
+                    {hasCard && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  </View>
+                  <Text style={styles.checkLabel}>I hold a valid medical cannabis card</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.btn, (!canContinue || loading) && styles.btnMuted]}
+            disabled={!canContinue || loading}
+            activeOpacity={0.85}
+            onPress={handleContinue}
+          >
+            <Text style={styles.btnText}>{loading ? 'Verifying...' : 'Continue'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.toast,
+            { transform: [{ translateY: toastAnim }], opacity: toastOpacity },
+          ]}
+        >
+          <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
+          <Text style={styles.toastText}>Phone number saved!</Text>
+        </Animated.View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboard: { flex: 1 },
   safe: { flex: 1, backgroundColor: BG },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
   back: { paddingHorizontal: 20, paddingTop: 8 },
   container: { flex: 1, paddingHorizontal: 24, paddingTop: 16 },
   title: { color: '#fff', fontSize: 26, fontWeight: '700', marginBottom: 8 },
@@ -181,7 +198,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2f1d2f',
   },
-  hintText: { color: '#666', fontSize: 13, lineHeight: 19 },
   ageLabel: { color: '#888', fontSize: 12, marginBottom: 4, textAlign: 'center' },
   ageValue: { color: '#fff', fontSize: 22, fontWeight: '700', textAlign: 'center' },
   warningBox: {
