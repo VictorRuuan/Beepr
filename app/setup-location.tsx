@@ -47,7 +47,20 @@ export default function SetupLocation() {
 
       const { latitude, longitude } = position.coords;
 
-      // 4. Persiste na tabela notification_preferences (mesmo schema do app Capacitor)
+      // 4. Geofencing: bloqueia regiões fora de US/Canada
+      const isBrazil =
+        latitude < 5.3 && latitude > -33.7 &&
+        longitude < -34.7 && longitude > -73.9;
+      if (isBrazil) {
+        setPhase('idle');
+        Alert.alert(
+          'Region Not Supported',
+          'Beepr is currently only available in the USA and Canada.',
+        );
+        return;
+      }
+
+      // 5. Persiste na tabela notification_preferences (mesmo schema do app Capacitor)
       const {
         data: { session },
       } = await supabase.auth.getSession();
