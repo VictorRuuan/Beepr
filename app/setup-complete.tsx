@@ -1,3 +1,4 @@
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -5,45 +6,229 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import { supabase } from "../lib/supabase";
+import { getNearbyBusinesses } from "../lib/api/businesses";
 
 const PINK = "#c4185c";
 const BG = "#130008";
 const CARD = "#17131a";
 const CARD_BORDER = "#2f1d2f";
 
-const buddingItems = [
-  {
-    id: 1,
-    title: "Blue Dream",
-    subtitle: "indica",
-    price: "$45.00",
-    match: "100% Perfect Match",
-    image: "https://via.placeholder.com/96x96/222/fff?text=BD",
-  },
-  {
-    id: 2,
-    title: "Blue Gas - Golden...",
-    subtitle: "indica",
-    price: "$55.00",
-    match: "100% Perfect Match",
-    image: "https://via.placeholder.com/96x96/225/fff?text=BG",
-  },
-  {
-    id: 3,
-    title: "Test Strain",
-    subtitle: "sativa",
-    price: "$49.99",
-    match: "100% Perfect Match",
-    image: "https://via.placeholder.com/96x96/228/fff?text=TS",
-  },
-];
+const STORAGE_URL =
+  "https://slhubwjeofitlmywworo.supabase.co/storage/v1/object/public";
+
+function resolveProductImage(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("http")) return url;
+  return `${STORAGE_URL}/product-images/${url}`;
+}
+
+type Product = {
+  id: string;
+  name: string;
+  strain_type?: string;
+  product_format?: string;
+  price_per_unit?: number;
+  original_price?: number;
+  image_url?: string;
+  match_score?: number;
+  discount_percent?: number;
+};
+
+type Business = {
+  id: string;
+  business_name: string;
+  business_city?: string;
+  business_state?: string;
+  business_logo_url?: string;
+  hours_of_operation?: Record<string, { open: string; close: string }>;
+  distance_miles?: number;
+  product_count?: number;
+  retailer_type?: string;
+  is_open?: boolean;
+};
+
+function isOpenNow(hours?: Record<string, { open: string; close: string }>): boolean {
+  if (!hours) return false;
+  const days = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+  const today = days[new Date().getDay()];
+  const todayHours = hours[today];
+  if (!todayHours) return false;
+  const now = new Date();
+  const [oh, om] = todayHours.open.split(":").map(Number);
+  const [ch, cm] = todayHours.close.split(":").map(Number);
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  return nowMins >= oh * 60 + om && nowMins <= ch * 60 + cm;
+}
 
 export default function SetupComplete() {
   const router = useRouter();
+  const [recommendations, setRecommendations] = useState<Product[]>([]);
+  const [deals, setDeals] = useState<Product[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [cityLabel, setCityLabel] = useState("Near You");
+
+  const fetchData = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      // 1. Produtos populares (sem desconto)
+      const { data: rawProducts } = await supabase
+        .from("products")
+        .select("id, name, strain_type, product_format, price, discount_price, image_url, popularity_score")
+        .eq("is_active", true)
+        .is("discount_price", null)
+        .order("popularity_score", { ascending: false })
+        .limit(6);
+
+      if (Array.isArray(rawProducts) && rawProducts.length > 0) {
+        const mapped: Product[] = rawProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          strain_type: p.strain_type ?? undefined,
+          product_format: p.product_format ?? undefined,
+          price_per_unit: p.price,
+          original_price: undefined,
+          image_url: resolveProductImage(p.image_url ?? undefined),
+          match_score:
+            p.popularity_score != null
+              ? Math.round(Math.min(99, p.popularity_score))
+              : undefined,
+          discount_percent: undefined,
+        }));
+        setRecommendations(mapped);
+      }
+
+      // 2. Produtos em promoção (deals)
+      const { data: rawDeals } = await supabase
+        .from("products")
+        .select("id, name, strain_type, product_format, price, discount_price, image_url, popularity_score")
+        .eq("is_active", true)
+        .not("discount_price", "is", null)
+        .order("popularity_score", { ascending: false })
+        .limit(1);
+
+      if (Array.isArray(rawDeals) && rawDeals.length > 0) {
+        const p = rawDeals[0];
+        const pct =
+          p.discount_price != null && p.price > 0
+            ? Math.round((1 - p.discount_price / p.price) * 100)
+            : 0;
+        setDeals([
+          {
+            id: p.id,
+            name: p.name,
+            strain_type: p.strain_type ?? undefined,
+            product_format: p.product_format ?? undefined,
+            price_per_unit: p.discount_price,
+            original_price: p.price,
+            image_url: resolveProductImage(p.image_url ?? undefined),
+            match_score:
+              p.popularity_score != null
+                ? Math.round(Math.min(99, p.popularity_score))
+                : undefined,
+            discount_percent: pct > 0 ? pct : undefined,
+          },
+        ]);
+      }
+
+      // 2. Dispensaries próximas
+      const { status } = await Location.getForegroundPermissionsAsync();
+      let coords: { latitude: number; longitude: number } | null = null;
+
+      if (status === "granted") {
+        try {
+          // Prefer cache, fall back to live fix
+          const cached = await Location.getLastKnownPositionAsync();
+          if (cached) {
+            coords = cached.coords;
+          } else {
+            const live = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            coords = live.coords;
+          }
+        } catch (_) {
+          // location not available (emulator / web) — fall through to direct query
+        }
+      }
+
+      if (coords) {
+        const [address] = await Location.reverseGeocodeAsync(coords).catch(() => [null]);
+        if (address?.city) setCityLabel(address.city);
+        else if (address?.subregion) setCityLabel(address.subregion);
+      }
+
+      // Try edge function (PostGIS) first
+      let loadedBusinesses = false;
+      if (coords) {
+        const { data: bizResponse } = await getNearbyBusinesses({
+          user_lat: coords.latitude,
+          user_lon: coords.longitude,
+          limit: 5,
+        });
+        const bizArr = (bizResponse as any)?.businesses;
+        if (Array.isArray(bizArr) && bizArr.length > 0) {
+          setBusinesses(bizArr);
+          loadedBusinesses = true;
+        }
+      }
+
+      // Fallback: load all approved businesses directly from Supabase
+      if (!loadedBusinesses) {
+        const { data: bizFallback } = await supabase
+          .from("business_applications")
+          .select("id, business_name, business_city, business_state, business_logo_url, hours_of_operation, retailer_type")
+          .eq("status", "approved")
+          .limit(5);
+
+        if (Array.isArray(bizFallback) && bizFallback.length > 0) {
+          setBusinesses(
+            bizFallback.map((b) => ({
+              id: b.id,
+              business_name: b.business_name,
+              business_city: b.business_city ?? undefined,
+              business_state: b.business_state ?? undefined,
+              business_logo_url: b.business_logo_url ?? undefined,
+              hours_of_operation: b.hours_of_operation ?? undefined,
+              retailer_type: b.retailer_type ?? undefined,
+              is_open: undefined,
+              distance_miles: undefined,
+              product_count: undefined,
+            }))
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[SetupComplete] fetchData error:", e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, [fetchData]);
+
+  const formatPrice = (price?: number) =>
+    price != null ? `$${price.toFixed(2)}` : "-";
+
+  const formatDistance = (d?: number) =>
+    d != null ? `${d.toFixed(1)} mi` : "";
 
   return (
     <View style={styles.safe}>
@@ -53,98 +238,180 @@ export default function SetupComplete() {
         <Text style={styles.brand}>beepr</Text>
         <View style={styles.locationWrapper}>
           <Ionicons name="location-sharp" size={18} color="#fff" />
-          <Text style={styles.locationText}>2651</Text>
+          <Text style={styles.locationText}>{cityLabel}</Text>
         </View>
         <View style={styles.topActions}>
           <Ionicons name="cube" size={18} color="#fff" />
-          <Ionicons
-            name="cart"
-            size={18}
-            color="#fff"
-            style={{ marginLeft: 12 }}
-          />
+          <Ionicons name="cart" size={18} color="#fff" style={{ marginLeft: 12 }} />
         </View>
       </View>
 
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={PINK} />
+        </View>
+      ) : (
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PINK} />}
       >
+        {/* ── Featured Promotion ── */}
         <Text style={styles.sectionTitle}>Featured Promotion</Text>
-        <View style={styles.promoCard}>
-          <View style={styles.promoLabelWrap}>
-            <Text style={styles.promoLabel}>Featured Promotion</Text>
-          </View>
-          <Text style={styles.promoCardTitle}>Blue Dream</Text>
-          <Text style={styles.promoCardSub}>Best Gas in Town</Text>
-        </View>
-
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
-          Deals For You
-        </Text>
-        <View style={styles.dealCard}>
-          <View style={styles.dealTopRow}>
-            <Text style={styles.dealMatch}>92% Perfect Match</Text>
-            <View style={styles.dealBadge}>
-              <Text style={styles.dealBadgeText}>33% OFF</Text>
+        {recommendations[0] ? (
+          <TouchableOpacity style={styles.promoCard} activeOpacity={0.85}>
+            <View style={styles.promoOverlay}>
+              <View style={styles.promoLabelWrap}>
+                <Text style={styles.promoLabel}>Featured Promotion</Text>
+              </View>
+              <Text style={styles.promoCardTitle}>{recommendations[0].name}</Text>
+              <Text style={styles.promoCardSub}>{recommendations[0].strain_type ?? ""}</Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.promoCard}>
+            <View style={styles.promoOverlay}>
+              <View style={styles.promoLabelWrap}>
+                <Text style={styles.promoLabel}>Featured Promotion</Text>
+              </View>
+              <Text style={styles.promoCardTitle}>Blue Dream</Text>
+              <Text style={styles.promoCardSub}>Best Gas in Town</Text>
             </View>
           </View>
-          <Text style={styles.dealName}>Lemon Cake Blaze</Text>
-          <Text style={styles.dealMeta}>indica • flower</Text>
-          <View style={styles.dealPriceRow}>
-            <Text style={styles.dealPrice}>$30.00</Text>
-            <Text style={styles.dealOldPrice}>$45.00</Text>
-          </View>
-        </View>
+        )}
 
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
-          Budding Interest
-        </Text>
+        {/* ── Deals For You ── */}
+        {deals.length > 0 && (
+          <>
+            <View style={[styles.sectionTitleRow, { marginTop: 16 }]}>
+              <Ionicons name="pricetag" size={18} color={PINK} />
+              <Text style={styles.sectionTitle}>Deals For You</Text>
+            </View>
+            {deals.map((deal) => (
+              <TouchableOpacity key={deal.id} style={styles.dealCard} activeOpacity={0.85}>
+                <View style={styles.dealRow}>
+                  {deal.image_url ? (
+                    <Image source={{ uri: deal.image_url }} style={styles.dealImageSquare} />
+                  ) : (
+                    <View style={[styles.dealImageSquare, styles.dealImagePlaceholder]}>
+                      <Ionicons name="leaf" size={32} color={PINK} />
+                    </View>
+                  )}
+                  <View style={styles.dealDetails}>
+                    <View style={styles.dealTopRow}>
+                      <Text style={styles.dealMatch}>
+                        {deal.match_score ? `${deal.match_score}% Perfect Match` : "Great Match"}
+                      </Text>
+                      {deal.discount_percent && (
+                        <View style={styles.dealBadge}>
+                          <Text style={styles.dealBadgeText}>{deal.discount_percent}% OFF</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.dealName} numberOfLines={2}>{deal.name}</Text>
+                    <Text style={styles.dealMeta}>
+                      {[deal.strain_type, deal.product_format].filter(Boolean).join(" • ")}
+                    </Text>
+                    <View style={styles.dealPriceRow}>
+                      <Text style={styles.dealPrice}>{formatPrice(deal.price_per_unit)}</Text>
+                      {deal.original_price && (
+                        <Text style={styles.dealOldPrice}>{formatPrice(deal.original_price)}</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
+        {/* ── Budding Interest ── */}
+        <View style={[styles.sectionTitleRow, { marginTop: 16 }]}>
+          <Ionicons name="time" size={18} color={PINK} />
+          <Text style={styles.sectionTitle}>Budding Interest</Text>
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.horizontal}
           contentContainerStyle={{ paddingVertical: 4 }}
         >
-          {buddingItems.map((item) => (
-            <View key={item.id} style={styles.buddingCard}>
-              <Image source={{ uri: item.image }} style={styles.productImage} />
-              <Text style={styles.productMatch}>{item.match}</Text>
-              <Text style={styles.productTitle}>{item.title}</Text>
-              <Text style={styles.productSubtitle}>{item.subtitle}</Text>
-              <Text style={styles.productPrice}>{item.price}</Text>
-            </View>
+          {(recommendations.length > 0 ? recommendations : []).map((item) => (
+            <TouchableOpacity key={item.id} style={styles.buddingCard} activeOpacity={0.85}>
+              <Image
+                source={
+                  item.image_url
+                    ? { uri: item.image_url }
+                    : { uri: `https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=200&h=200&fit=crop&auto=format` }
+                }
+                style={styles.productImage}
+              />
+              <Text style={styles.productMatch}>
+                {item.match_score ? `${item.match_score}% Match` : "Perfect Match"}
+              </Text>
+              <Text style={styles.productTitle} numberOfLines={1}>{item.name}</Text>
+              <Text style={styles.productSubtitle}>{item.strain_type ?? ""}</Text>
+              <Text style={styles.productPrice}>{formatPrice(item.price_per_unit)}</Text>
+            </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
-          Dispensaries Near You
-        </Text>
-        <View style={styles.dispensaryCard}>
-          <View style={styles.dispensaryHeader}>
-            <Text style={styles.dispensaryLogo}>beepr</Text>
-            <Text style={styles.dispensaryStatus}>Closed</Text>
-          </View>
-          <Text style={styles.dispensaryName}>Ryder's Test Business</Text>
-          <View style={styles.dispensaryDetails}>
-            <Ionicons name="location" size={14} color="#888" />
-            <Text style={styles.dispensaryDetail}>California</Text>
-          </View>
-          <View style={styles.dispensaryDetails}>
-            <Ionicons name="time" size={14} color="#888" />
-            <Text style={styles.dispensaryDetail}>Closed</Text>
-          </View>
-          <Text style={styles.dispensaryDistance}>0 mi • 7 products</Text>
+        {/* ── Dispensaries Near You ── */}
+        <View style={[styles.sectionTitleRow, { marginTop: 16 }]}>
+          <Ionicons name="storefront" size={18} color={PINK} />
+          <Text style={styles.sectionTitle}>Dispensaries Near You</Text>
         </View>
+        {businesses.length > 0 ? businesses.map((biz) => {
+          const open = biz.is_open ?? isOpenNow(biz.hours_of_operation);
+          return (
+            <TouchableOpacity key={biz.id} style={[styles.dispensaryCard, { marginBottom: 10 }]} activeOpacity={0.85}>
+              <View style={styles.dispensaryHeader}>
+                {biz.business_logo_url ? (
+                  <Image source={{ uri: biz.business_logo_url }} style={styles.dispensaryLogoImg} />
+                ) : (
+                  <Text style={styles.dispensaryLogo}>beepr</Text>
+                )}
+                <Text style={[styles.dispensaryStatus, open ? styles.statusOpen : styles.statusClosed]}>
+                  {open ? "Open" : "Closed"}
+                </Text>
+              </View>
+              <Text style={styles.dispensaryName}>{biz.business_name}</Text>
+              <View style={styles.dispensaryDetails}>
+                <Ionicons name="location" size={14} color="#888" />
+                <Text style={styles.dispensaryDetail}>
+                  {[biz.business_city, biz.business_state].filter(Boolean).join(", ")}
+                </Text>
+              </View>
+              {biz.hours_of_operation && (
+                <View style={styles.dispensaryDetails}>
+                  <Ionicons name="time" size={14} color="#888" />
+                  <Text style={styles.dispensaryDetail}>{open ? "Open Now" : "Closed"}</Text>
+                </View>
+              )}
+              <Text style={styles.dispensaryDistance}>
+                {[formatDistance(biz.distance_miles), biz.product_count ? `${biz.product_count} products` : ""].filter(Boolean).join(" • ")}
+              </Text>
+            </TouchableOpacity>
+          );
+        }) : (
+          <View style={styles.dispensaryCard}>
+            <Text style={styles.comingSoonText}>No dispensaries found near you yet.</Text>
+          </View>
+        )}
 
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
-          Hottest Products in Your Area
-        </Text>
+        <View style={[styles.sectionTitleRow, { marginTop: 16 }]}>
+          <Ionicons name="trending-up" size={18} color={PINK} />
+          <Text style={styles.sectionTitle}>Hottest Products in Your Area</Text>
+        </View>
         <Text style={styles.comingSoonText}>More products coming soon</Text>
 
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Buy Again</Text>
+        <View style={[styles.sectionTitleRow, { marginTop: 16 }]}>
+          <Ionicons name="bag" size={18} color={PINK} />
+          <Text style={styles.sectionTitle}>Buy Again</Text>
+        </View>
         <Text style={styles.comingSoonText}>More products coming soon</Text>
       </ScrollView>
+      )}
 
       <View style={styles.footerNav}>
         <TouchableOpacity
@@ -180,6 +447,7 @@ export default function SetupComplete() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
+  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   topBar: {
     height: 52,
     flexDirection: "row",
@@ -223,14 +491,28 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 10,
   },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   promoCard: {
     backgroundColor: CARD,
     borderWidth: 1,
     borderColor: CARD_BORDER,
     borderRadius: 14,
-    padding: 14,
+    overflow: "hidden",
     minHeight: 110,
     justifyContent: "center",
+  },
+  promoImage: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    opacity: 0.35,
+  },
+  promoOverlay: {
+    padding: 14,
   },
   promoLabelWrap: {
     alignSelf: "flex-start",
@@ -261,6 +543,23 @@ const styles = StyleSheet.create({
     borderColor: CARD_BORDER,
     borderRadius: 14,
     padding: 14,
+  },
+  dealRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  dealImageSquare: {
+    width: 110,
+    height: 110,
+    borderRadius: 10,
+  },
+  dealImagePlaceholder: {
+    backgroundColor: "#220015",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dealDetails: {
+    flex: 1,
   },
   dealTopRow: {
     flexDirection: "row",
@@ -338,14 +637,25 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1,
   },
+  dispensaryLogoImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+  },
   dispensaryStatus: {
-    color: "#fff",
     fontSize: 12,
     fontWeight: "700",
-    backgroundColor: "#222",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
+  },
+  statusOpen: {
+    color: "#22c55e",
+    backgroundColor: "rgba(34,197,94,0.12)",
+  },
+  statusClosed: {
+    color: "#aaa",
+    backgroundColor: "rgba(50,50,50,0.6)",
   },
   dispensaryName: {
     color: "#fff",

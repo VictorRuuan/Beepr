@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { Platform } from 'react-native';
 import { supabase } from '../supabase';
 
 export const BACKGROUND_LOCATION_TASK = 'beepr-background-location';
@@ -69,6 +70,8 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
 
 /** Requests foreground + background location permissions */
 export async function requestLocationPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+
   const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
   if (fgStatus !== 'granted') return false;
 
@@ -78,6 +81,8 @@ export async function requestLocationPermissions(): Promise<boolean> {
 
 /** Starts the persistent background location task */
 export async function startBackgroundLocation(): Promise<void> {
+  if (Platform.OS === 'web') return;
+
   const isRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
   if (isRunning) return;
 
