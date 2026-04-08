@@ -78,45 +78,51 @@ export default function SetupComplete() {
   const [cityLabel, setCityLabel] = useState("Near You");
 
   const fetchData = useCallback(async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
+    // ── Produtos e dispensaries em paralelo ──────────────────────────────────
+    // Produtos são mostrados imediatamente; localização não bloqueia o render.
 
-      // 1. Produtos populares (sem desconto)
-      const { data: rawProducts } = await supabase
-        .from("products")
-        .select("id, name, strain_type, product_format, price, discount_price, image_url, popularity_score")
-        .eq("is_active", true)
-        .is("discount_price", null)
-        .order("popularity_score", { ascending: false })
-        .limit(6);
+    const fetchProducts = async () => {
+      const [res1, res2] = await Promise.all([
+        supabase
+          .from("products")
+          .select("id, name, strain_type, price, discount_price, image_url")
+          .eq("is_active", true)
+          .is("discount_price", null)
+          .order("favorite_count", { ascending: false })
+          .limit(6),
+        supabase
+          .from("products")
+          .select("id, name, strain_type, price, discount_price, image_url")
+          .eq("is_active", true)
+          .not("discount_price", "is", null)
+          .order("favorite_count", { ascending: false })
+          .limit(1),
+      ]);
+
+      if (res1.error) console.error("[SetupComplete] products query:", res1.error.message);
+      if (res2.error) console.error("[SetupComplete] deals query:", res2.error.message);
+
+      const rawProducts = res1.data;
+      const rawDeals = res2.data;
+
+      console.log("[SetupComplete] products sample:", JSON.stringify(rawProducts?.[0]));
+      console.log("[SetupComplete] deals sample:", JSON.stringify(rawDeals?.[0]));
 
       if (Array.isArray(rawProducts) && rawProducts.length > 0) {
-        const mapped: Product[] = rawProducts.map((p) => ({
-          id: p.id,
-          name: p.name,
-          strain_type: p.strain_type ?? undefined,
-          product_format: p.product_format ?? undefined,
-          price_per_unit: p.price,
-          original_price: undefined,
-          image_url: resolveProductImage(p.image_url ?? undefined),
-          match_score:
-            p.popularity_score != null
-              ? Math.round(Math.min(99, p.popularity_score))
-              : undefined,
-          discount_percent: undefined,
-        }));
-        setRecommendations(mapped);
+        setRecommendations(
+          rawProducts.map((p) => ({
+            id: p.id,
+            name: p.name,
+            strain_type: p.strain_type ?? undefined,
+            product_format: undefined,
+            price_per_unit: p.price,
+            original_price: undefined,
+            image_url: resolveProductImage(p.image_url ?? undefined),
+            match_score: undefined,
+            discount_percent: undefined,
+          }))
+        );
       }
-
-      // 2. Produtos em promoção (deals)
-      const { data: rawDeals } = await supabase
-        .from("products")
-        .select("id, name, strain_type, product_format, price, discount_price, image_url, popularity_score")
-        .eq("is_active", true)
-        .not("discount_price", "is", null)
-        .order("popularity_score", { ascending: false })
-        .limit(1);
 
       if (Array.isArray(rawDeals) && rawDeals.length > 0) {
         const p = rawDeals[0];
@@ -124,54 +130,49 @@ export default function SetupComplete() {
           p.discount_price != null && p.price > 0
             ? Math.round((1 - p.discount_price / p.price) * 100)
             : 0;
-        setDeals([
-          {
-            id: p.id,
-            name: p.name,
-            strain_type: p.strain_type ?? undefined,
-            product_format: p.product_format ?? undefined,
-            price_per_unit: p.discount_price,
-            original_price: p.price,
-            image_url: resolveProductImage(p.image_url ?? undefined),
-            match_score:
-              p.popularity_score != null
-                ? Math.round(Math.min(99, p.popularity_score))
-                : undefined,
-            discount_percent: pct > 0 ? pct : undefined,
-          },
-        ]);
+        setDeals([{
+          id: p.id,
+          name: p.name,
+          strain_type: p.strain_type ?? undefined,
+          product_format: undefined,
+          price_per_unit: p.discount_price,
+          original_price: p.price,
+          image_url: resolveProductImage(p.image_url ?? undefined),
+          match_score: undefined,
+          discount_percent: pct > 0 ? pct : undefined,
+        }]);
       }
+    };
 
-      // 2. Dispensaries próximas
-      const { status } = await Location.getForegroundPermissionsAsync();
+    const fetchBusinesses = async () => {
+      // Geolocation com timeout de 5 s para não bloquear a tela
       let coords: { latitude: number; longitude: number } | null = null;
-
-      if (status === "granted") {
-        try {
-          // Prefer cache, fall back to live fix
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === "granted") {
           const cached = await Location.getLastKnownPositionAsync();
           if (cached) {
             coords = cached.coords;
           } else {
-            const live = await Location.getCurrentPositionAsync({
+            const locPromise = Location.getCurrentPositionAsync({
               accuracy: Location.Accuracy.Balanced,
             });
-            coords = live.coords;
+            const timeout = new Promise<null>((res) =>
+              setTimeout(() => res(null), 5000)
+            );
+            const result = await Promise.race([locPromise, timeout]);
+            if (result) coords = result.coords;
           }
-        } catch (_) {
-          // location not available (emulator / web) — fall through to direct query
         }
+      } catch (_) {
+        // web / emulator — sem localização
       }
 
       if (coords) {
         const [address] = await Location.reverseGeocodeAsync(coords).catch(() => [null]);
         if (address?.city) setCityLabel(address.city);
         else if (address?.subregion) setCityLabel(address.subregion);
-      }
 
-      // Try edge function (PostGIS) first
-      let loadedBusinesses = false;
-      if (coords) {
         const { data: bizResponse } = await getNearbyBusinesses({
           user_lat: coords.latitude,
           user_lon: coords.longitude,
@@ -180,41 +181,51 @@ export default function SetupComplete() {
         const bizArr = (bizResponse as any)?.businesses;
         if (Array.isArray(bizArr) && bizArr.length > 0) {
           setBusinesses(bizArr);
-          loadedBusinesses = true;
+          return;
         }
       }
 
-      // Fallback: load all approved businesses directly from Supabase
-      if (!loadedBusinesses) {
-        const { data: bizFallback } = await supabase
-          .from("business_applications")
-          .select("id, business_name, business_city, business_state, business_logo_url, hours_of_operation, retailer_type")
-          .eq("status", "approved")
-          .limit(5);
+      // Fallback direto no Supabase
+      const { data: bizFallback, error: bizErr } = await supabase
+        .from("business_applications")
+        .select("id, business_name, business_city, business_state, business_logo_url, hours_of_operation, retailer_type")
+        .eq("status", "approved")
+        .limit(5);
 
-        if (Array.isArray(bizFallback) && bizFallback.length > 0) {
-          setBusinesses(
-            bizFallback.map((b) => ({
-              id: b.id,
-              business_name: b.business_name,
-              business_city: b.business_city ?? undefined,
-              business_state: b.business_state ?? undefined,
-              business_logo_url: b.business_logo_url ?? undefined,
-              hours_of_operation: b.hours_of_operation ?? undefined,
-              retailer_type: b.retailer_type ?? undefined,
-              is_open: undefined,
-              distance_miles: undefined,
-              product_count: undefined,
-            }))
-          );
-        }
+      console.log("[SetupComplete] bizFallback:", JSON.stringify(bizFallback?.[0]), "err:", bizErr?.message);
+
+      if (Array.isArray(bizFallback) && bizFallback.length > 0) {
+        setBusinesses(
+          bizFallback.map((b) => ({
+            id: b.id,
+            business_name: b.business_name,
+            business_city: b.business_city ?? undefined,
+            business_state: b.business_state ?? undefined,
+            business_logo_url: b.business_logo_url ?? undefined,
+            hours_of_operation: b.hours_of_operation ?? undefined,
+            retailer_type: b.retailer_type ?? undefined,
+            is_open: undefined,
+            distance_miles: undefined,
+            product_count: undefined,
+          }))
+        );
       }
+    };
+
+    try {
+      // Produtos desbloqueiam o loading imediatamente
+      await fetchProducts();
     } catch (e) {
-      console.error("[SetupComplete] fetchData error:", e);
+      console.error("[SetupComplete] products error:", e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+
+    // Dispensaries carregam em background sem bloquear a UI
+    fetchBusinesses().catch((e) =>
+      console.error("[SetupComplete] businesses error:", e)
+    );
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
