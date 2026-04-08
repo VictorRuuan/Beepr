@@ -1,34 +1,42 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, Animated,
-} from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  Animated,
+} from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-const PINK = '#c4185c';
-const BG = '#130008';
+const PINK = "#c4185c";
+const BG = "#130008";
 
 const FEATURES = [
   {
     title: "Get Beep'd about deals.",
     titleHighlight: "Beep'd",
-    desc: 'Discover the latest deals and offers near you.',
+    desc: "Discover the latest deals and offers near you.",
   },
   {
-    title: 'Save your favorites.',
+    title: "Save your favorites.",
     titleHighlight: null,
-    desc: 'Keep track of your favorite products and brands.',
+    desc: "Keep track of your favorite products and brands.",
   },
   {
-    title: 'Discover new products.',
+    title: "Discover new products.",
     titleHighlight: null,
     desc: "Find new products when you're feeling adventurous.",
   },
 ];
 
-function FeatureRow({ title, titleHighlight, desc }: {
+function FeatureRow({
+  title,
+  titleHighlight,
+  desc,
+}: {
   title: string;
   titleHighlight: string | null;
   desc: string;
@@ -37,8 +45,13 @@ function FeatureRow({ title, titleHighlight, desc }: {
 
   return (
     <View style={styles.featureRow}>
-      <Ionicons name="checkmark" size={20} color={PINK} style={styles.check} />
-      <View style={{ flex: 1 }}>
+      <View style={styles.featureTitleRow}>
+        <Ionicons
+          name="checkmark"
+          size={20}
+          color={PINK}
+          style={styles.check}
+        />
         <Text style={styles.featureTitle}>
           {parts ? (
             <>
@@ -46,8 +59,12 @@ function FeatureRow({ title, titleHighlight, desc }: {
               <Text style={styles.highlight}>{titleHighlight}</Text>
               {parts[1]}
             </>
-          ) : title}
+          ) : (
+            title
+          )}
         </Text>
+      </View>
+      <View style={styles.featureCopy}>
         <Text style={styles.featureDesc}>{desc}</Text>
       </View>
     </View>
@@ -62,14 +79,30 @@ export default function Onboarding() {
   useEffect(() => {
     // Slide up + fade in
     Animated.parallel([
-      Animated.timing(toastAnim, { toValue: 0, duration: 350, useNativeDriver: true }),
-      Animated.timing(toastOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.timing(toastAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }),
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }),
     ]).start(() => {
       // Hold then fade out
       setTimeout(() => {
         Animated.parallel([
-          Animated.timing(toastAnim, { toValue: 60, duration: 300, useNativeDriver: true }),
-          Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+          Animated.timing(toastAnim, {
+            toValue: 60,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(toastOpacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
         ]).start();
       }, 3000);
     });
@@ -86,7 +119,7 @@ export default function Onboarding() {
         <Text style={styles.subtitle}>Your Cannabis Matchmaker</Text>
 
         <View style={styles.features}>
-          {FEATURES.map(f => (
+          {FEATURES.map((f) => (
             <FeatureRow key={f.title} {...f} />
           ))}
         </View>
@@ -96,7 +129,7 @@ export default function Onboarding() {
         <TouchableOpacity
           style={styles.btn}
           activeOpacity={0.85}
-          onPress={() => router.push('/setup-name')}
+          onPress={() => router.push("/setup-name")}
         >
           <Text style={styles.btnText}>Let's Go</Text>
         </TouchableOpacity>
@@ -118,33 +151,63 @@ export default function Onboarding() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
-  container: { flex: 1, paddingHorizontal: 28, paddingTop: 24 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 40,
+    justifyContent: "center",
+  },
   logo: {
     color: PINK,
     fontSize: 28,
-    fontStyle: 'italic',
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 32,
+    fontStyle: "italic",
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 44,
   },
   title: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: 6,
+    textAlign: "center",
+    lineHeight: 38,
   },
   subtitle: {
     color: PINK,
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 40,
+    fontWeight: "600",
+    marginBottom: 52,
+    textAlign: "center",
   },
-  features: { gap: 28 },
-  featureRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  check: { marginRight: 12, marginTop: 2 },
-  featureTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  features: {
+    gap: 28,
+    alignSelf: "stretch",
+    paddingLeft: 2,
+  },
+  featureRow: {
+    alignItems: "flex-start",
+  },
+  featureTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+  },
+  check: {
+    marginRight: 12,
+  },
+  featureCopy: {
+    paddingLeft: 32,
+    paddingRight: 8,
+  },
+  featureTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
   highlight: { color: PINK },
-  featureDesc: { color: '#888', fontSize: 14, lineHeight: 20 },
+  featureDesc: { color: "#888", fontSize: 15, lineHeight: 22 },
   footer: {
     paddingHorizontal: 24,
     paddingBottom: 40,
@@ -155,21 +218,21 @@ const styles = StyleSheet.create({
     backgroundColor: PINK,
     borderRadius: 50,
     paddingVertical: 18,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   toast: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 110,
     left: 24,
     right: 24,
-    backgroundColor: '#333',
+    backgroundColor: "#333",
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
-  toastText: { color: '#fff', fontSize: 14, fontWeight: '500' },
+  toastText: { color: "#fff", fontSize: 14, fontWeight: "500" },
 });

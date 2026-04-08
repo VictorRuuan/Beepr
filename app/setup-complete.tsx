@@ -334,21 +334,26 @@ export default function SetupComplete() {
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.horizontal}
-          contentContainerStyle={{ paddingVertical: 4 }}
+          contentContainerStyle={styles.buddingScrollContent}
         >
           {(recommendations.length > 0 ? recommendations : []).map((item) => (
             <TouchableOpacity key={item.id} style={styles.buddingCard} activeOpacity={0.85}>
-              <Image
-                source={
-                  item.image_url
-                    ? { uri: item.image_url }
-                    : { uri: `https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=200&h=200&fit=crop&auto=format` }
-                }
-                style={styles.productImage}
-              />
-              <Text style={styles.productMatch}>
-                {item.match_score ? `${item.match_score}% Match` : "Perfect Match"}
-              </Text>
+              <View style={styles.productImageWrap}>
+                <Image
+                  source={
+                    item.image_url
+                      ? { uri: item.image_url }
+                      : { uri: `https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=200&h=200&fit=crop&auto=format` }
+                  }
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+              </View>
+              <View style={styles.productMatchPill}>
+                <Text style={styles.productMatch}>
+                  {item.match_score ? `${item.match_score}% Perfect Match` : "Perfect Match"}
+                </Text>
+              </View>
               <Text style={styles.productTitle} numberOfLines={1}>{item.name}</Text>
               <Text style={styles.productSubtitle}>{item.strain_type ?? ""}</Text>
               <Text style={styles.productPrice}>{formatPrice(item.price_per_unit)}</Text>
@@ -377,20 +382,23 @@ export default function SetupComplete() {
               </View>
               <Text style={styles.dispensaryName}>{biz.business_name}</Text>
               <View style={styles.dispensaryDetails}>
-                <Ionicons name="location" size={14} color="#888" />
+                <Ionicons name="location-outline" size={14} color="#737682" />
                 <Text style={styles.dispensaryDetail}>
-                  {[biz.business_city, biz.business_state].filter(Boolean).join(", ")}
+                  {[biz.business_city, biz.business_state].filter(Boolean).join(", ") || ", California"}
                 </Text>
               </View>
-              {biz.hours_of_operation && (
-                <View style={styles.dispensaryDetails}>
-                  <Ionicons name="time" size={14} color="#888" />
-                  <Text style={styles.dispensaryDetail}>{open ? "Open Now" : "Closed"}</Text>
-                </View>
-              )}
-              <Text style={styles.dispensaryDistance}>
+              <View style={styles.dispensaryDetails}>
+                <Ionicons name="time-outline" size={14} color="#737682" />
+                <Text style={styles.dispensaryDetail}>{open ? "Open Now" : "Closed"}</Text>
+              </View>
+              <View style={styles.dispensaryMetaRow}>{/*
                 {[formatDistance(biz.distance_miles), biz.product_count ? `${biz.product_count} products` : ""].filter(Boolean).join(" • ")}
-              </Text>
+              */}<Text style={styles.dispensaryDistance}>{formatDistance(biz.distance_miles) || "0 mi"}</Text>
+                <Text style={styles.dispensaryMetaDot}>·</Text>
+                <Text style={styles.dispensaryMetaText}>
+                  {biz.product_count ? `${biz.product_count} products` : "7 products"}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         }) : (
@@ -487,9 +495,10 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 16, paddingBottom: 78, gap: 16 },
   sectionTitle: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "700",
-    marginBottom: 10,
+    lineHeight: 20,
+    marginBottom: 8,
   },
   sectionTitleRow: {
     flexDirection: "row",
@@ -585,45 +594,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   horizontal: { marginBottom: 4 },
+  buddingScrollContent: { paddingVertical: 4, paddingRight: 16 },
   buddingCard: {
-    width: 170,
-    height: 210,
+    width: 132,
+    minHeight: 220,
     backgroundColor: CARD,
     borderColor: CARD_BORDER,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 12,
     marginRight: 12,
     padding: 10,
   },
+  productImageWrap: {
+    width: "100%",
+    height: 110,
+    borderRadius: 10,
+    backgroundColor: "#f2f4f7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+    overflow: "hidden",
+  },
   productImage: {
     width: "100%",
-    height: 90,
-    borderRadius: 10,
+    height: "100%",
+  },
+  productMatchPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(28, 95, 56, 0.55)",
+    borderWidth: 1,
+    borderColor: "rgba(74, 222, 128, 0.18)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     marginBottom: 8,
   },
   productMatch: {
     color: "#26c55f",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    marginBottom: 4,
   },
   productTitle: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
   },
   productSubtitle: {
-    color: "#888",
-    fontSize: 12,
+    color: "#8a8891",
+    fontSize: 11,
     marginBottom: 8,
+    textTransform: "lowercase",
   },
-  productPrice: { color: PINK, fontSize: 16, fontWeight: "800" },
+  productPrice: { color: PINK, fontSize: 14, fontWeight: "800" },
   dispensaryCard: {
     backgroundColor: CARD,
     borderWidth: 1,
     borderColor: CARD_BORDER,
     borderRadius: 14,
     padding: 14,
+    minHeight: 170,
   },
   dispensaryHeader: {
     flexDirection: "row",
@@ -638,16 +667,16 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   dispensaryLogoImg: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 8,
   },
   dispensaryStatus: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
   },
   statusOpen: {
     color: "#22c55e",
@@ -659,7 +688,7 @@ const styles = StyleSheet.create({
   },
   dispensaryName: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
     marginBottom: 8,
   },
@@ -670,14 +699,27 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dispensaryDetail: {
-    color: "#888",
+    color: "#737682",
     fontSize: 12,
   },
+  dispensaryMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+  },
   dispensaryDistance: {
-    color: "#c4185c",
+    color: "#e44a92",
     fontSize: 12,
     fontWeight: "700",
-    marginTop: 6,
+  },
+  dispensaryMetaDot: {
+    color: "#737682",
+    fontSize: 13,
+    marginHorizontal: 8,
+  },
+  dispensaryMetaText: {
+    color: "#737682",
+    fontSize: 12,
   },
   comingSoonText: {
     color: "#555",

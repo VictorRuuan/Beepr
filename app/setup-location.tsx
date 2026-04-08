@@ -31,7 +31,12 @@ export default function SetupLocation() {
       <View style={styles.container}>
         {/* Pin icon */}
         <View style={styles.iconWrap}>
-          <Ionicons name="location-outline" size={64} color={PINK} />
+          <Ionicons name="location-outline" size={86} color={PINK} />
+          <View style={styles.iconCenter}>
+            <View style={styles.iconInnerRing}>
+              <View style={styles.iconInnerDot} />
+            </View>
+          </View>
         </View>
 
         <Text style={styles.title}>Enable Location</Text>
@@ -67,30 +72,51 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
   },
   iconWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
+    width: 104,
+    height: 104,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 30,
+  },
+  iconCenter: {
+    position: 'absolute',
+    top: 24,
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconInnerRing: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 4,
     borderColor: PINK,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 28,
+  },
+  iconInnerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: PINK,
   },
   title: {
     color: '#fff',
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 14,
+    fontSize: 25,
+    fontWeight: '800',
+    marginBottom: 16,
     textAlign: 'center',
   },
   body: {
-    color: '#aaa',
-    fontSize: 14,
-    lineHeight: 22,
+    color: '#6f7384',
+    fontSize: 13,
+    lineHeight: 21,
     textAlign: 'center',
+    maxWidth: 320,
   },
   footer: {
     paddingHorizontal: 24,
