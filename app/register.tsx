@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -13,14 +13,16 @@ const BG = '#130008';
 export default function Register() {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
 
   async function handleContinue() {
-    if (!email.trim() || loading) return;
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setLoading(false);
-    router.push({ pathname: '/verify', params: { email } });
+    if (!email.trim()) return;
+    // Validate email format before proceeding
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    router.push({ pathname: '/create-password', params: { email: email.trim() } });
   }
 
   return (
@@ -49,11 +51,11 @@ export default function Register() {
       />
 
       <TouchableOpacity
-        style={[styles.btn, (!email.trim() || loading) && styles.btnMuted]}
+        style={[styles.btn, !email.trim() && styles.btnMuted]}
         onPress={handleContinue}
         activeOpacity={0.85}
       >
-        <Text style={styles.btnText}>{loading ? 'Sending...' : 'Continue'}</Text>
+        <Text style={styles.btnText}>Continue</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );

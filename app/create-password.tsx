@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
+  StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../lib/supabase';
 
 const PINK = '#c4185c';
 const BG = '#130008';
@@ -25,6 +26,7 @@ function Requirement({ met, label }: { met: boolean; label: string }) {
 
 export default function CreatePassword() {
   const router = useRouter();
+  const { email } = useLocalSearchParams<{ email: string }>();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -113,9 +115,22 @@ export default function CreatePassword() {
           activeOpacity={0.85}
           onPress={async () => {
             setLoading(true);
-            await new Promise(r => setTimeout(r, 1500));
+            const { data, error } = await supabase.auth.signUp({
+              email: email ?? '',
+              password,
+            });
             setLoading(false);
-            router.push('/onboarding');
+            if (error) {
+              Alert.alert('Error', error.message);
+              return;
+            }
+            if (data.session) {
+              // Email confirmation disabled — user logged in immediately
+              router.replace('/onboarding');
+            } else {
+              // Email confirmation enabled — OTP was sent to email
+              router.push({ pathname: '/verify', params: { email: email ?? '' } });
+            }
           }}
         >
           <Text style={styles.btnText}>{loading ? 'Creating...' : 'Continue'}</Text>

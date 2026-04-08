@@ -6,6 +6,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../lib/supabase';
 
 const PINK = '#c4185c';
 const BG = '#130008';
@@ -55,9 +56,16 @@ export default function SetupFlavors() {
     });
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (loading) return;
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('user_preferences').upsert(
+        { user_id: user.id, flavor_preferences: selected },
+        { onConflict: 'user_id' },
+      );
+    }
     showToast('Survey complete!');
     setTimeout(() => {
       router.push('/setup-location');

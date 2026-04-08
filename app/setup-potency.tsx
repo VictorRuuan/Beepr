@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { supabase } from '../lib/supabase';
 
 const PINK = '#c4185c';
 const BG = '#130008';
@@ -58,7 +59,16 @@ export default function SetupPotency() {
           style={[styles.btn, !selected && styles.btnMuted]}
           disabled={!selected}
           activeOpacity={0.85}
-          onPress={() => router.push('/setup-strains')}
+          onPress={async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('user_preferences').upsert(
+                { user_id: user.id, potency_preference: [selected!] },
+                { onConflict: 'user_id' },
+              );
+            }
+            router.push('/setup-strains');
+          }}
         >
           <Text style={styles.btnText}>Continue</Text>
         </TouchableOpacity>

@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
+﻿import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../lib/supabase';
 
 // Background task must be imported at the top level so TaskManager registers it
-// before any component renders — this is a Expo requirement.
+// before any component renders - this is a Expo requirement.
 import '../lib/tasks/backgroundLocation';
 import {
   registerForPushNotifications,
@@ -14,7 +14,7 @@ import {
 
 async function savePushToken(token: string) {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return; // not authenticated yet — token will be saved on next login
+  if (!user) return;
 
   const { error } = await supabase
     .from('user_push_tokens')
@@ -22,11 +22,11 @@ async function savePushToken(token: string) {
       {
         user_id: user.id,
         token,
-        platform: Platform.OS, // 'ios' | 'android'
+        platform: Platform.OS,
         updated_at: new Date().toISOString(),
       },
       {
-        onConflict: 'user_id,token', // unique constraint on the table
+        onConflict: 'user_id,token',
         ignoreDuplicates: false,
       },
     );
@@ -38,24 +38,44 @@ async function savePushToken(token: string) {
   }
 }
 
+// Screens that do not require authentication
+const PUBLIC_ROUTES = ['index', 'register', 'login', 'verify', 'create-password', 'onboarding'];
+
 export default function RootLayout() {
+  const router = useRouter();
+  const segments = useSegments();
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
-    // Register device and persist Expo push token to user_push_tokens table
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only redirect on explicit sign-in, never on session restore at app load
+      if (event !== 'SIGNED_IN') return;
+
+      const currentRoute = segments[segments.length - 1] ?? 'index';
+
+      // Only redirect from the welcome screen or login — registration flow
+      // screens (create-password, verify) handle their own navigation after signUp
+      const REDIRECT_ROUTES = ['index', 'login'];
+      if (session && REDIRECT_ROUTES.includes(currentRoute)) {
+        router.replace('/setup-complete');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [segments]);
+
+  useEffect(() => {
     registerForPushNotifications().then((token) => {
       if (token) savePushToken(token);
     });
 
-    // Foreground notification listener
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log('[PushNotifications] Received in foreground:', notification);
       },
     );
 
-    // Tap handler — deep links to the correct screen
     responseListener.current = Notifications.addNotificationResponseReceivedListener(
       handleNotificationResponse,
     );

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { supabase } from '../lib/supabase';
 
 const PINK = '#c4185c';
 const BG = '#130008';
@@ -130,7 +131,16 @@ export default function SetupStrains() {
           style={[styles.btn, selected.length === 0 && styles.btnMuted]}
           disabled={selected.length === 0}
           activeOpacity={0.85}
-          onPress={() => router.push('/setup-flavors')}
+          onPress={async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('user_preferences').upsert(
+                { user_id: user.id, strain_type_preference: selected },
+                { onConflict: 'user_id' },
+              );
+            }
+            router.push('/setup-flavors');
+          }}
         >
           <Text style={styles.btnText}>Continue</Text>
         </TouchableOpacity>

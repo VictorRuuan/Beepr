@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Animated, SafeAreaView,
+  StyleSheet, Animated, SafeAreaView, Alert, Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../lib/supabase';
 
 const PINK = '#c4185c';
 const BG = '#130008';
@@ -41,6 +42,34 @@ export default function Verify() {
     next[index] = digit;
     setCode(next);
     if (digit && index < 5) inputRefs.current[index + 1]?.focus();
+    // Auto-submit when last digit entered
+    if (digit && index === 5) {
+      const full = next.join('');
+      if (full.length === 6) handleVerifyWithCode(full);
+    }
+  }
+
+  async function handleVerifyWithCode(otp: string) {
+    setLoading(true);
+    // Try 'signup' type first, fall back to 'email' (magic link OTP)
+    let result = await supabase.auth.verifyOtp({
+      email: email ?? '',
+      token: otp,
+      type: 'signup',
+    });
+    if (result.error) {
+      result = await supabase.auth.verifyOtp({
+        email: email ?? '',
+        token: otp,
+        type: 'email',
+      });
+    }
+    setLoading(false);
+    if (result.error) {
+      Alert.alert('Verification Failed', result.error.message);
+      return;
+    }
+    router.replace('/onboarding');
   }
 
   function handleKeyPress(key: string, index: number) {
@@ -50,11 +79,15 @@ export default function Verify() {
   }
 
   async function handleVerify() {
-    if (loading) return;
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setLoading(false);
-    router.push('/create-password');
+    const otp = code.join('');
+    if (otp.length < 6 || loading) return;
+    await handleVerifyWithCode(otp);
+  }
+
+  async function handleResend() {
+    if (seconds > 0) return;
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email ?? '' });
+    if (!error) setSeconds(59);
   }
 
   return (
@@ -81,7 +114,8 @@ export default function Verify() {
               value={digit}
               onChangeText={v => handleChange(v, i)}
               onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
-              keyboardType="number-pad"
+              keyboardType={Platform.OS === 'web' ? 'default' : 'number-pad'}
+              inputMode="numeric"
               maxLength={1}
               textAlign="center"
               selectionColor={PINK}
@@ -100,7 +134,10 @@ export default function Verify() {
 
         <Text style={styles.resend}>
           Didn't receive your code?{' '}
-          <Text style={styles.timer}>
+          <Text
+            style={[styles.timer, seconds === 0 && { color: PINK }]}
+            onPress={handleResend}
+          >
             {seconds > 0 ? `Try again in 0:${seconds.toString().padStart(2, '0')}` : 'Resend'}
           </Text>
         </Text>
