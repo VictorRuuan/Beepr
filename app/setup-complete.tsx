@@ -252,8 +252,12 @@ export default function SetupComplete() {
           <Text style={styles.locationText}>{cityLabel}</Text>
         </View>
         <View style={styles.topActions}>
-          <Ionicons name="cube" size={18} color="#fff" />
-          <Ionicons name="cart" size={18} color="#fff" style={{ marginLeft: 12 }} />
+          <TouchableOpacity onPress={() => router.push("/notifications")}>
+            <Ionicons name="notifications-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/cart")} style={{ marginLeft: 12 }}>
+            <Ionicons name="cart-outline" size={22} color="#fff" />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -270,7 +274,7 @@ export default function SetupComplete() {
         {/* ── Featured Promotion ── */}
         <Text style={styles.sectionTitle}>Featured Promotion</Text>
         {recommendations[0] ? (
-          <TouchableOpacity style={styles.promoCard} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.promoCard} activeOpacity={0.85} onPress={() => router.push(`/product/${recommendations[0].id}`)}>
             <View style={styles.promoOverlay}>
               <View style={styles.promoLabelWrap}>
                 <Text style={styles.promoLabel}>Featured Promotion</Text>
@@ -299,7 +303,7 @@ export default function SetupComplete() {
               <Text style={styles.sectionTitle}>Deals For You</Text>
             </View>
             {deals.map((deal) => (
-              <TouchableOpacity key={deal.id} style={styles.dealCard} activeOpacity={0.85}>
+              <TouchableOpacity key={deal.id} style={styles.dealCard} activeOpacity={0.85} onPress={() => router.push(`/product/${deal.id}`)}>
                 <View style={styles.dealRow}>
                   {deal.image_url ? (
                     <Image source={{ uri: deal.image_url }} style={styles.dealImageSquare} />
@@ -348,7 +352,7 @@ export default function SetupComplete() {
           contentContainerStyle={styles.buddingScrollContent}
         >
           {(recommendations.length > 0 ? recommendations : []).map((item) => (
-            <TouchableOpacity key={item.id} style={styles.buddingCard} activeOpacity={0.85}>
+            <TouchableOpacity key={item.id} style={styles.buddingCard} activeOpacity={0.85} onPress={() => router.push(`/product/${item.id}`)}>
               <View style={styles.productImageWrap}>
                 <Image
                   source={
@@ -380,7 +384,7 @@ export default function SetupComplete() {
         {businesses.length > 0 ? businesses.map((biz) => {
           const open = biz.is_open ?? isOpenNow(biz.hours_of_operation);
           return (
-            <TouchableOpacity key={biz.id} style={[styles.dispensaryCard, { marginBottom: 10 }]} activeOpacity={0.85}>
+            <TouchableOpacity key={biz.id} style={[styles.dispensaryCard, { marginBottom: 10 }]} activeOpacity={0.85} onPress={() => router.push(`/dispensary/${biz.id}`)}>
               <View style={styles.dispensaryHeader}>
                 {biz.business_logo_url ? (
                   <Image source={{ uri: biz.business_logo_url }} style={styles.dispensaryLogoImg} />
@@ -451,11 +455,11 @@ export default function SetupComplete() {
           <Ionicons name="sparkles" size={22} color="#888" />
           <Text style={styles.tabText}>Beeps</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/favorites")}>
           <Ionicons name="heart" size={22} color="#888" />
           <Text style={styles.tabText}>Favorites</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push("/profile")}>
           <Ionicons name="person" size={22} color="#888" />
           <Text style={styles.tabText}>Profile</Text>
         </TouchableOpacity>

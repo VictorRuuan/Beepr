@@ -118,6 +118,12 @@ export default function CreatePassword() {
             const { data, error } = await supabase.auth.signUp({
               email: email ?? '',
               password,
+              options: {
+                data: {
+                  age_verified: true,
+                  age_verified_at: new Date().toISOString(),
+                },
+              },
             });
             setLoading(false);
             if (error) {
